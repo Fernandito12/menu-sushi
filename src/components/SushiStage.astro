@@ -558,12 +558,12 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     .category.active::before { width: 4px; height: 4px; margin-right: 5px; }
     .stage-wrap { min-height: 0; padding: 18px 0 20px; perspective: 1200px; }
     .eyebrow { margin-bottom: 7px; font-size: 8px; }
-    h1 { font-size: clamp(27px, 7vw, 38px); }
+    h1 { margin-bottom: clamp(20px, 3svh, 26px); font-size: clamp(27px, 7vw, 38px); }
     .shelf-section__viewport { height: min(40svh, 330px); min-height: 240px; perspective: 1200px; perspective-origin: 50% 46%; touch-action: pan-y; }
     .stage { transform: translateZ(0) rotateX(-3deg); }
     .geometry-probe { height: min(48vw, 34svh) !important; }
     .shelf { bottom: 14%; }
-    .stage-hint { margin-top: 2px; }
+    .stage-hint { margin-top: 10px; }
     :global(.caption-mask) { width: min(94vw, 520px); height: 94px; margin-top: 2px; }
     :global(.caption-content) { grid-template-rows: 34px 23px; padding: 0 4%; }
     :global(.caption-title) { font-size: clamp(25px, 7vw, 30px); }
