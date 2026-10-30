@@ -396,7 +396,15 @@
     orderButton.addEventListener('click', () => {
       if (!activeDish) return;
       window.dispatchEvent(new CustomEvent('takumi:add-to-order', { detail: activeDish }));
-      if (orderLabel) orderLabel.textContent = 'AÑADIDO AL PEDIDO / 追加済み';
+      if (orderLabel) {
+        orderLabel.textContent = '¡AGREGADO! / 追加されました';
+        orderButton.classList.add('is-added');
+        window.setTimeout(() => {
+          if (!orderLabel.isConnected) return;
+          orderLabel.innerHTML = 'AÑADIR AL PEDIDO <i lang="ja">注文する</i>';
+          orderButton.classList.remove('is-added');
+        }, 1500);
+      }
     });
     window.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && modal.classList.contains('is-open')) {
@@ -431,6 +439,8 @@
   .sake-copy p { max-width: 480px; margin: 6px 0 0; color: #4c4e4a; font: 400 14px/1.45 'Newsreader', serif; }
   .detail-order { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 36px; padding: 0 18px; border: 1px solid var(--cobalt); background: var(--cobalt); color: white; cursor: pointer; font: 500 10px 'Inter Tight', sans-serif; letter-spacing: .1em; }
   .detail-order i { margin-left: 8px; }
+  .detail-order.is-added { background: #1F3FB0; border-color: #1F3FB0; transform: scale(1.025); }
+  .detail-order { transition: background-color .25s ease, border-color .25s ease, transform .35s cubic-bezier(.2,.72,.18,1); }
   .detail-order b { font: 400 16px 'Inter Tight', sans-serif; }
   .detail-close:focus-visible, .detail-order:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 4px; }
   .detail-art { position: relative; min-width: 0; min-height: min(82vh, 900px); display: grid; place-items: center; }

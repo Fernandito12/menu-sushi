@@ -1,5 +1,6 @@
 ---
 import Preloader from '../components/Preloader.astro';
+import CartDrawer from '../components/CartDrawer.astro';
 
 interface Props { title?: string; }
 const { title = 'TAKUMI OMAKASE — 匠' } = Astro.props;
@@ -46,6 +47,7 @@ const publicBase = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE
       </svg>
     </div>
     <slot />
+    <CartDrawer />
   </body>
 </html>
 

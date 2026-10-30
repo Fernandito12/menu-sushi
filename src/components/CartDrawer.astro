@@ -1,0 +1,192 @@
+<div class="cart-widget" data-cart-widget>
+  <button class="cart-trigger" type="button" data-cart-open aria-haspopup="dialog" aria-controls="cart-drawer" aria-label="Abrir pedido">
+    <span>Pedido</span><span class="cart-count" data-cart-count aria-live="polite">0</span>
+  </button>
+  <div class="cart-backdrop" data-cart-backdrop></div>
+  <aside class="cart-drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title" aria-hidden="true" tabindex="-1">
+    <header class="cart-header">
+      <div><span class="cart-kicker">TAKUMI OMAKASE / 匠</span><h2 id="cart-title">Tu pedido</h2></div>
+      <button class="cart-close" type="button" data-cart-close aria-label="Cerrar pedido">×</button>
+    </header>
+    <div class="cart-body">
+      <p class="cart-empty" data-cart-empty>Tu selección aparecerá aquí.</p>
+      <ul class="cart-items" data-cart-items aria-live="polite"></ul>
+    </div>
+    <footer class="cart-footer">
+      <div class="cart-subtotal"><span>Subtotal</span><strong data-cart-subtotal>$0 MXN</strong></div>
+      <div class="cart-total"><span>Total</span><strong data-cart-total>$0 MXN</strong></div>
+      <button class="checkout-button" type="button" data-cart-checkout>FINALIZAR PEDIDO POR WHATSAPP <i lang="ja">注文を送信</i><span aria-hidden="true">↗</span></button>
+      <p class="cart-feedback" data-cart-feedback role="status"></p>
+    </footer>
+  </aside>
+</div>
+
+<script>
+  import { addToCart, cartSubtotal, formatMXN, removeFromCart, setCartQuantity, subscribeCart, type CartItem } from '../utils/cartStore';
+
+  const widget = document.querySelector<HTMLElement>('[data-cart-widget]');
+  const drawer = widget?.querySelector<HTMLElement>('[data-cart-drawer], .cart-drawer');
+  const openButton = widget?.querySelector<HTMLButtonElement>('[data-cart-open]');
+  const closeButton = widget?.querySelector<HTMLButtonElement>('[data-cart-close]');
+  const backdrop = widget?.querySelector<HTMLElement>('[data-cart-backdrop]');
+  const count = widget?.querySelector<HTMLElement>('[data-cart-count]');
+  const list = widget?.querySelector<HTMLUListElement>('[data-cart-items]');
+  const empty = widget?.querySelector<HTMLElement>('[data-cart-empty]');
+  const subtotal = widget?.querySelector<HTMLElement>('[data-cart-subtotal]');
+  const total = widget?.querySelector<HTMLElement>('[data-cart-total]');
+  const feedback = widget?.querySelector<HTMLElement>('[data-cart-feedback]');
+  const checkout = widget?.querySelector<HTMLButtonElement>('[data-cart-checkout]');
+  let returnFocus: HTMLElement | null = null;
+
+  if (widget && drawer && openButton && closeButton && backdrop && count && list && empty && subtotal && total && feedback && checkout) {
+    const setOpen = (open: boolean) => {
+      widget.classList.toggle('is-open', open);
+      drawer.setAttribute('aria-hidden', String(!open));
+      document.body.classList.toggle('cart-is-open', open);
+      if (open) {
+        returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : openButton;
+        window.setTimeout(() => closeButton.focus(), 30);
+      } else {
+        returnFocus?.focus();
+      }
+    };
+
+    const render = (items: CartItem[]) => {
+      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      count.textContent = String(itemCount);
+      count.setAttribute('aria-label', `${itemCount} ${itemCount === 1 ? 'platillo' : 'platillos'}`);
+      if (itemCount > 0) {
+        count.classList.remove('is-bouncing');
+        void count.offsetWidth;
+        count.classList.add('is-bouncing');
+      }
+      empty.hidden = items.length > 0;
+      list.replaceChildren();
+
+      items.forEach((item) => {
+        const row = document.createElement('li');
+        row.className = 'cart-item';
+        const image = document.createElement('img');
+        image.className = 'cart-thumb';
+        image.src = item.thumbnail;
+        image.alt = '';
+        image.loading = 'lazy';
+        const detail = document.createElement('div');
+        detail.className = 'cart-item-detail';
+        const title = document.createElement('strong');
+        title.textContent = item.titleEs || item.title;
+        const price = document.createElement('span');
+        price.textContent = `${formatMXN(item.price)} c/u`;
+        detail.append(title, price);
+        const controls = document.createElement('div');
+        controls.className = 'cart-quantity';
+        const decrement = document.createElement('button');
+        decrement.type = 'button'; decrement.textContent = '−'; decrement.setAttribute('aria-label', `Quitar una unidad de ${item.titleEs || item.title}`);
+        decrement.addEventListener('click', () => setCartQuantity(item.id, item.quantity - 1));
+        const quantity = document.createElement('span'); quantity.textContent = String(item.quantity);
+        const increment = document.createElement('button');
+        increment.type = 'button'; increment.textContent = '+'; increment.setAttribute('aria-label', `Agregar una unidad de ${item.titleEs || item.title}`);
+        increment.addEventListener('click', () => setCartQuantity(item.id, item.quantity + 1));
+        controls.append(decrement, quantity, increment);
+        const lineTotal = document.createElement('strong');
+        lineTotal.className = 'cart-line-total'; lineTotal.textContent = formatMXN(item.price * item.quantity);
+        const remove = document.createElement('button');
+        remove.type = 'button'; remove.className = 'cart-remove'; remove.textContent = 'Eliminar';
+        remove.addEventListener('click', () => removeFromCart(item.id));
+        const itemContent = document.createElement('div');
+        itemContent.className = 'cart-item-content';
+        itemContent.append(detail, controls, lineTotal, remove);
+        row.append(image, itemContent);
+        list.append(row);
+      });
+
+      const amount = cartSubtotal(items);
+      subtotal.textContent = formatMXN(amount);
+      total.textContent = formatMXN(amount);
+      checkout.disabled = items.length === 0;
+    };
+
+    subscribeCart(render);
+    window.addEventListener('takumi:add-to-order', (event) => {
+      const dish = (event as CustomEvent<{ id: string; title: string; titleEs?: string; price: string | number; images: string[] }>).detail;
+      if (!dish?.id || !dish.title) return;
+      const parsedPrice = typeof dish.price === 'number' ? dish.price : Number(String(dish.price).replace(/[^\d.]/g, ''));
+      if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) return;
+      addToCart({ id: dish.id, title: dish.title, titleEs: dish.titleEs || dish.title, price: parsedPrice, thumbnail: dish.images?.[0] ?? '' });
+      feedback.textContent = 'Platillo agregado a tu pedido.';
+    });
+    openButton.addEventListener('click', () => setOpen(true));
+    closeButton.addEventListener('click', () => setOpen(false));
+    backdrop.addEventListener('click', () => setOpen(false));
+    window.addEventListener('keydown', (event) => { if (event.key === 'Escape' && widget.classList.contains('is-open')) setOpen(false); });
+    checkout.addEventListener('click', () => {
+      const items = subscribeSnapshot();
+      if (!items.length) return;
+      const phone = (import.meta.env.PUBLIC_WHATSAPP_PHONE ?? '').replace(/\D/g, '');
+      if (!phone) {
+        feedback.textContent = 'Configura PUBLIC_WHATSAPP_PHONE con el número de WhatsApp del restaurante.';
+        return;
+      }
+      const amount = cartSubtotal(items);
+      const message = [
+        '🍣 *NUEVO PEDIDO - TAKUMI OMAKASE*',
+        '',
+        ...items.map((item) => `- ${item.quantity}x ${item.title} (${formatMXN(item.price * item.quantity)})`),
+        '',
+        `Subtotal: ${formatMXN(amount)}`,
+        `*Total:* ${formatMXN(amount)}`,
+        '',
+        '¡Hola! Me gustaría confirmar este pedido para recolección/entrega.',
+      ].join('\n');
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+      feedback.textContent = 'Pedido preparado en WhatsApp.';
+    });
+  }
+
+  function subscribeSnapshot(): CartItem[] {
+    let snapshot: CartItem[] = [];
+    const unsubscribe = subscribeCart((items) => { snapshot = items; });
+    unsubscribe();
+    return snapshot;
+  }
+</script>
+
+<style is:global>
+  .cart-trigger { position: fixed; z-index: 55; top: 17px; right: 4.2vw; min-height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 13px; border: 1px solid rgba(25,27,27,.2); border-radius: 999px; background: rgba(247,244,239,.92); color: var(--ink); font: 500 10px 'Inter Tight',sans-serif; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); }
+  .cart-count { min-width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; background: var(--cobalt); color: white; font-size: 10px; letter-spacing: 0; }
+  .cart-count.is-bouncing { animation: cart-bounce .42s var(--ease); }
+  @keyframes cart-bounce { 0%,100%{transform:scale(1)} 45%{transform:scale(1.28)} 70%{transform:scale(.92)} }
+  .cart-backdrop { position: fixed; z-index: 80; inset: 0; background: rgba(18,19,20,.32); opacity: 0; visibility: hidden; transition: opacity .38s ease, visibility .38s ease; }
+  .cart-drawer { position: fixed; z-index: 81; inset: 0 0 0 auto; width: min(470px, 100vw); height: 100dvh; display: flex; flex-direction: column; padding: 30px clamp(22px,4vw,38px) 26px; overflow: auto; background: #F7F4EF; color: var(--ink); box-shadow: -18px 0 60px rgba(20,20,20,.12); transform: translateX(102%); visibility: hidden; transition: transform .5s var(--ease), visibility .5s; }
+  .cart-widget.is-open .cart-backdrop { opacity: 1; visibility: visible; }
+  .cart-widget.is-open .cart-drawer { transform: translateX(0); visibility: visible; }
+  .cart-header { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 24px; border-bottom: 1px solid var(--rule); }
+  .cart-kicker { color: var(--cobalt); font: 500 9px 'Inter Tight',sans-serif; letter-spacing: .14em; }
+  .cart-header h2 { margin: 7px 0 0; font: 400 40px/.98 'Newsreader',serif; }
+  .cart-close { width: 44px; height: 44px; border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--ink); font: 300 27px/1 'Inter Tight',sans-serif; cursor: pointer; }
+  .cart-body { flex: 1; }
+  .cart-empty { margin: 36px 0; color: #77746e; font: 400 18px 'Newsreader',serif; }
+  .cart-empty[hidden] { display: none; }
+  .cart-items { margin: 0; padding: 0; list-style: none; }
+  .cart-item { display: grid; grid-template-columns: 68px minmax(0,1fr); gap: 15px; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+  .cart-thumb { width: 68px; height: 82px; object-fit: cover; background: #e8e3da; }
+  .cart-item-content { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; }
+  .cart-item-detail { display: grid; gap: 5px; }
+  .cart-item-detail strong { font: 400 19px/1.05 'Newsreader',serif; }
+  .cart-item-detail span,.cart-line-total { color: #77746e; font: 500 11px 'Inter Tight',sans-serif; }
+  .cart-quantity { display: flex; align-items: center; gap: 9px; font: 500 12px 'Inter Tight',sans-serif; }
+  .cart-quantity button { width: 32px; height: 32px; border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--ink); font-size: 17px; cursor: pointer; }
+  .cart-line-total { justify-self: end; color: var(--ink); }
+  .cart-remove { justify-self: start; padding: 4px 0; border: 0; background: none; color: #77746e; font: 500 9px 'Inter Tight',sans-serif; text-decoration: underline; cursor: pointer; }
+  .cart-footer { padding-top: 20px; border-top: 1px solid var(--rule); }
+  .cart-subtotal,.cart-total { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font: 500 12px 'Inter Tight',sans-serif; }
+  .cart-total { margin-top: 5px; font-size: 14px; }
+  .cart-total strong { font: 500 22px 'Newsreader',serif; }
+  .checkout-button { width: 100%; min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 18px; padding: 0 16px; border: 0; background: var(--cobalt); color: white; font: 500 9px 'Inter Tight',sans-serif; letter-spacing: .08em; cursor: pointer; }
+  .checkout-button i { font: 11px 'Noto Sans JP',sans-serif; font-style: normal; letter-spacing: 0; }
+  .checkout-button:disabled { opacity: .4; cursor: not-allowed; }
+  .cart-feedback { min-height: 16px; margin: 9px 0 0; color: var(--cobalt); font: 500 11px 'Inter Tight',sans-serif; }
+  body.cart-is-open { overflow: hidden; }
+  @media (max-width: 767px) { .cart-trigger { top: 10px; right: 5vw; min-height: 40px; padding: 0 9px; } .cart-drawer { padding-top: max(24px, env(safe-area-inset-top)); padding-bottom: max(20px, env(safe-area-inset-bottom)); } }
+  @media (prefers-reduced-motion: reduce) { .cart-count.is-bouncing { animation: none; } .cart-drawer,.cart-backdrop { transition-duration: .01ms; } }
+</style>
