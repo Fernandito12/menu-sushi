@@ -197,7 +197,7 @@
       revealText();
       openingAnimation = modal.animate([
         { left: `${payload.origin.left}px`, top: `${payload.origin.top}px`, width: `${payload.origin.width}px`, height: `${payload.origin.height}px`, transform: 'rotate(-4.5deg)', clipPath: 'inset(0 round 8px)' },
-        { left: '0px', top: '0px', width: `${window.innerWidth}px`, height: `${window.innerHeight}px`, transform: 'rotate(0deg)', clipPath: 'inset(0)' },
+        { left: '0px', top: '0px', width: '100vw', height: '100dvh', transform: 'rotate(0deg)', clipPath: 'inset(0)' },
       ], { duration: 1050, easing: 'cubic-bezier(.76,0,.18,1)', fill: 'forwards' });
 
       const detailFade = inner.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 550, delay: 280, easing: 'ease-out', fill: 'forwards' });
@@ -210,8 +210,8 @@
       if (sequence !== transition) return;
       modal.style.left = '0px';
       modal.style.top = '0px';
-      modal.style.width = `${window.innerWidth}px`;
-      modal.style.height = `${window.innerHeight}px`;
+      modal.style.width = '100vw';
+      modal.style.height = '100dvh';
       modal.style.transform = 'rotate(0deg)';
       modal.style.clipPath = 'inset(0)';
       openingAnimation.cancel();
@@ -314,7 +314,7 @@
   .detail-art svg { display: block; width: min(100%, 474px); height: min(82vh, 900px); overflow: visible; background: #e5dfd3; }
   .art-caption { position: absolute; right: 14px; bottom: 12px; color: rgba(25, 27, 27, .62); font: 11px 'Noto Sans JP', sans-serif; writing-mode: vertical-rl; }
   @media (max-width: 767px) {
-    .detail-modal { overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+    .detail-modal { position: fixed; inset: 0; height: 100vh; height: 100dvh; min-height: 100svh; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
     .detail-inner { min-height: 100svh; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 22px; padding: 84px 20px 40px; }
     .detail-art { grid-row: 1; grid-column: 1; min-height: 42svh; height: 42svh; }
     .detail-art svg { width: min(100%, 474px); height: 42svh; }

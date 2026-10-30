@@ -138,6 +138,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     let dragging = false;
     let dragPointerType = 'mouse';
     let dragMoved = false;
+    let lastDragX = 0;
+    let lastDragTime = 0;
+    let inertiaVelocity = 0;
+    let inertiaOrigin = 0;
+    let inertiaActive = false;
     let frame = 0;
     let lastWatermarkCategory = '';
 
@@ -243,7 +248,18 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     const animate = (now: number) => {
       const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 0;
       lastTime = now;
-      s += (T - s) * (prefersReducedMotion ? 1 : 1 - Math.exp(-10 * dt));
+      // El resorte usa segundos transcurridos; responde igual a 60, 90 y 120 Hz.
+      if (!dragging && inertiaActive) {
+        T = clamp(T + inertiaVelocity * dt, inertiaOrigin - 1.8, inertiaOrigin + 1.8);
+        inertiaVelocity *= Math.exp(-7.5 * dt);
+        if (Math.abs(inertiaVelocity) < 0.08) {
+          inertiaActive = false;
+          inertiaVelocity = 0;
+          T = Math.round(T);
+        }
+      }
+      const springK = 3.2;
+      s += (T - s) * (prefersReducedMotion ? 1 : 1 - Math.exp(-springK * dt));
 
       const cursorEase = prefersReducedMotion ? 1 : 1 - Math.exp(-16 * dt);
       cursorX += (pointerX - cursorX) * cursorEase;
@@ -338,7 +354,8 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       const wheel = event as WheelEvent;
       const delta = wheel.deltaY || wheel.deltaX;
       const unit = wheel.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : wheel.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight : 1;
-      T += (delta * unit / Math.max(ws, d)) * 0.85;
+      const wheelMultiplier = 0.0015;
+      T += delta * unit * wheelMultiplier;
     }, { passive: false });
 
     const viewport = shelf.querySelector<HTMLElement>('.shelf-section__viewport');
@@ -349,17 +366,35 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       const pointer = event as PointerEvent;
       if (pointer.button !== 0) return;
       dragging = true;
+      inertiaActive = false;
+      inertiaVelocity = 0;
       dragPointerType = pointer.pointerType;
       dragMoved = false;
       pointerStartX = pointer.clientX;
       pointerStartT = T;
+      inertiaOrigin = T;
+      lastDragX = pointer.clientX;
+      lastDragTime = performance.now();
       viewport.setPointerCapture(pointer.pointerId);
     });
     viewport?.addEventListener('pointermove', (event) => {
       const pointer = event as PointerEvent;
       if (dragging) {
         if (Math.abs(pointer.clientX - pointerStartX) > 6) dragMoved = true;
-        T = pointerStartT - (pointer.clientX - pointerStartX) / Math.max(ws, 1);
+        const now = performance.now();
+        const sampleDt = Math.max((now - lastDragTime) / 1000, 1 / 240);
+        const deltaX = pointer.clientX - lastDragX;
+        if (dragPointerType === 'touch') {
+          const touchMultiplier = 0.4;
+          const maxDelta = 1.8;
+          const dragDelta = clamp(-(pointer.clientX - pointerStartX) / Math.max(ws, 1) * touchMultiplier, -maxDelta, maxDelta);
+          T = pointerStartT + dragDelta;
+          inertiaVelocity = clamp(-deltaX / Math.max(ws, 1) * touchMultiplier / sampleDt, -3.6, 3.6);
+        } else {
+          T = pointerStartT - (pointer.clientX - pointerStartX) / Math.max(ws, 1);
+        }
+        lastDragX = pointer.clientX;
+        lastDragTime = now;
       }
       const target = pointer.target instanceof Element ? pointer.target.closest<HTMLElement>('.tape.open .cv') : null;
       const activeCard = target?.closest<HTMLElement>('.tape');
@@ -378,7 +413,10 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       });
     });
     const finishPointer = (event: PointerEvent) => {
-      if (dragging && dragPointerType === 'touch' && dragMoved) T = Math.round(T);
+      if (dragging && dragPointerType === 'touch' && dragMoved) {
+        inertiaActive = Math.abs(inertiaVelocity) >= 0.08;
+        if (!inertiaActive) T = Math.round(T);
+      }
       dragging = false;
       if (viewport?.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
     };
@@ -469,11 +507,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   .stage-wrap { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 650px; padding: 35px 0 40px; perspective: 2200px; }
   .eyebrow { z-index: 1; margin: 0 0 10px; color: var(--cobalt); font-size: 9px; }
   h1 { z-index: 1; margin: 0; font: 400 clamp(28px, 3.2vw, 48px)/1.1 'Newsreader', serif; letter-spacing: -.035em; }
-  .shelf-section__viewport { width: 100%; height: clamp(360px, 48vh, 510px); position: relative; display: grid; place-items: center; perspective: 2200px; perspective-origin: 50% 43%; touch-action: pan-y; }
-  .stage { position: relative; width: 1px; height: 1px; transform-style: preserve-3d; transform: rotateX(-5deg); }
-  .tape { position: absolute; left: calc(var(--d, 210px) / -2); top: calc(var(--H, 300px) / -2); width: var(--d, 210px); height: var(--H, 300px); transform-style: preserve-3d; will-change: transform; }
+  .shelf-section__viewport { width: 100%; height: clamp(360px, 48svh, 510px); position: relative; display: grid; place-items: center; perspective: 2200px; perspective-origin: 50% 43%; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transform: translateZ(0); will-change: transform; touch-action: pan-y; }
+  .stage { position: relative; width: 1px; height: 1px; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transform: translateZ(0) rotateX(-5deg); will-change: transform; }
+  .tape { position: absolute; left: calc(var(--d, 210px) / -2); top: calc(var(--H, 300px) / -2); width: var(--d, 210px); height: var(--H, 300px); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; will-change: transform; }
   .geometry-probe { position: fixed !important; left: -10000px !important; top: 0 !important; visibility: hidden !important; transform: none !important; width: 1px !important; height: clamp(230px, 38vh, 330px) !important; }
-  .cv, .sp { position: absolute; top: 0; height: 100%; overflow: hidden; backface-visibility: hidden; box-shadow: 0 18px 35px rgba(37, 31, 20, .17), 0 2px 5px rgba(37, 31, 20, .14); filter: brightness(var(--shade, .55)); }
+  .cv, .sp { position: absolute; top: 0; height: 100%; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 18px 35px rgba(37, 31, 20, .17), 0 2px 5px rgba(37, 31, 20, .14); filter: brightness(var(--shade, .55)); }
   .cv { left: 0; width: var(--d, 210px); display: flex; align-items: flex-end; color: #fff; background-color: #5b4c3c; background-image: linear-gradient(0deg, rgba(20, 17, 14, .78), rgba(20, 17, 14, .08) 72%), var(--card-image); background-size: cover; background-position: center; }
   .sp { left: 0; width: var(--ws, 42px); transform: rotateY(90deg) translateZ(calc(var(--ws, 42px) / 2)); transform-origin: left center; background-color: #7b6548; background-image: linear-gradient(90deg, rgba(30, 24, 17, .58), rgba(30, 24, 17, .12)), var(--card-image); background-size: cover; background-position: center; color: #fffaf0; }
   .cover-copy { display: flex; width: 100%; flex-direction: column; padding: 19px 17px; }
@@ -522,7 +560,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     :global(.caption-mask) { height: 116px; }
   }
   @media (max-width: 767px) {
-    .shelf-section { --H: min(52vw, 36svh); min-height: 100svh; perspective: 1200px; }
+    .shelf-section { --H: min(48vw, 34svh); min-height: 100svh; perspective: 1200px; }
     .topbar { grid-template-columns: 1fr auto; padding: 12px 5vw 8px; }
     .categories { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; gap: 3px; width: 100%; margin-top: 5px; overflow-x: auto; overflow-y: hidden; }
     .category { display: inline-flex; flex: 0 0 auto; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; padding: 0 7px; font-size: 8px; }
@@ -530,9 +568,9 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     .stage-wrap { min-height: 0; padding: 18px 0 20px; perspective: 1200px; }
     .eyebrow { margin-bottom: 7px; font-size: 8px; }
     h1 { font-size: clamp(27px, 7vw, 38px); }
-    .shelf-section__viewport { height: min(42svh, 340px); min-height: 255px; perspective: 1200px; perspective-origin: 50% 46%; touch-action: pan-y; }
-    .stage { transform: rotateX(-3deg); }
-    .geometry-probe { height: min(52vw, 36svh) !important; }
+    .shelf-section__viewport { height: min(40svh, 330px); min-height: 240px; perspective: 1200px; perspective-origin: 50% 46%; touch-action: pan-y; }
+    .stage { transform: translateZ(0) rotateX(-3deg); }
+    .geometry-probe { height: min(48vw, 34svh) !important; }
     .stage-nav { width: 44px; height: 44px; }
     .stage-prev { left: 3vw; }
     .stage-next { right: 3vw; }
