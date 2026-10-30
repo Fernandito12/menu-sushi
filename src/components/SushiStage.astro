@@ -365,10 +365,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         const easedSpread = 2 * B(clamp(absR, 0, 1)) * d;
         const x = r * ws + side * easedSpread;
         const active = absR < 0.5;
-        const open = smoothstep(Math.max(0, 1 - absR));
+        // La apertura pertenece solo al libro seleccionado; los vecinos siguen siendo lomos.
+        const open = smoothstep(Math.max(0, 1 - absR * 2));
         const mouseTiltX = Number(card.style.getPropertyValue('--tilt-x')) || 0;
         const mouseTiltY = Number(card.style.getPropertyValue('--tilt-y')) || 0;
-        const lift = Math.max(0, 1 - absR);
+        const lift = Math.max(0, 1 - absR * 2);
         const rotateX = mouseTiltX * open;
         const rotateY = -90 * open + mouseTiltY * open;
         const rotateZ = -4.5 * open;
