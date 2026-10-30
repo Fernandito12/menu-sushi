@@ -44,10 +44,10 @@
         <image data-gallery-reveal href="" x="0" y="0" width="474" height="900" preserveAspectRatio="xMidYMid slice" mask="url(#ink-mask)" />
         <rect x=".5" y=".5" width="473" height="899" fill="none" stroke="rgba(25,27,27,.14)" />
       </svg>
-      <nav class="gallery-controls" data-gallery-controls aria-label="Fotografías del platillo">
+      <nav class="gallery-sidebar" data-gallery-controls aria-label="Fotografías del platillo">
         <button class="gallery-arrow gallery-arrow-prev" type="button" data-gallery-prev aria-label="Fotografía anterior">‹</button>
         <div class="gallery-dots" data-gallery-dots role="group" aria-label="Seleccionar fotografía"></div>
-        <button class="gallery-arrow gallery-arrow-next" type="button" data-gallery-next aria-label="Fotografía siguiente">›</button>
+        <button class="gallery-arrow gallery-arrow-next" type="button" data-gallery-next aria-label="Fotografía siguiente">‹</button>
       </nav>
       <span class="art-caption" lang="ja">季節の一皿</span>
     </div>
@@ -432,26 +432,28 @@
   .detail-art { position: relative; min-width: 0; min-height: min(82vh, 900px); display: grid; place-items: center; }
   .detail-art { touch-action: pan-y; }
   .detail-art svg { display: block; width: min(100%, 474px); height: min(82vh, 900px); overflow: visible; background: #e5dfd3; }
-  .gallery-controls { position: absolute; z-index: 2; left: 50%; bottom: 22px; display: flex; align-items: center; gap: 13px; padding: 6px 8px; border: 1px solid rgba(247, 244, 239, .52); border-radius: 999px; background: rgba(25, 27, 27, .28); backdrop-filter: blur(12px); transform: translateX(-50%); opacity: 0; transition: opacity 220ms ease; }
-  .detail-art.has-gallery:hover .gallery-controls, .detail-art.has-gallery:focus-within .gallery-controls { opacity: 1; }
-  .gallery-arrow { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(247, 244, 239, .55); border-radius: 50%; background: rgba(247, 244, 239, .12); color: #fff; cursor: pointer; font: 300 23px/1 'Inter Tight', sans-serif; transition: background-color 180ms ease, opacity 180ms ease, transform 180ms ease; }
-  .gallery-arrow:hover:not(:disabled) { background: rgba(247, 244, 239, .28); transform: scale(1.06); }
-  .gallery-arrow:disabled { opacity: .32; cursor: default; }
-  .gallery-dots { display: flex; align-items: center; gap: 7px; }
-  .gallery-dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .55); cursor: pointer; transition: width 200ms ease, border-radius 200ms ease, background-color 200ms ease; }
-  .gallery-dot.is-active { width: 19px; border-radius: 99px; background: #fff; }
-  .gallery-arrow:focus-visible, .gallery-dot:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .gallery-sidebar { position: absolute; z-index: 2; top: 50%; left: max(0px, calc((100% - 474px) / 2)); display: flex; flex-direction: column; align-items: center; gap: 5px; width: 24px; padding: 7px 0; border: 1px solid rgba(255, 255, 255, .12); border-radius: 999px; background: rgba(20, 20, 20, .15); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transform: translate(-50%, -50%); opacity: .45; transition: opacity 240ms ease; }
+  .detail-art.has-gallery:hover .gallery-sidebar, .detail-art.has-gallery:focus-within .gallery-sidebar { opacity: .9; }
+  .gallery-arrow { width: 22px; height: 27px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: transparent; color: rgba(255, 255, 255, .82); cursor: pointer; font: 300 18px/1 'Inter Tight', sans-serif; transition: color 180ms ease, opacity 180ms ease; }
+  .gallery-arrow-prev { transform: rotate(90deg); }
+  .gallery-arrow-next { transform: rotate(-90deg); }
+  .gallery-arrow:hover:not(:disabled) { color: #fff; }
+  .gallery-arrow:disabled { opacity: .28; cursor: default; }
+  .gallery-dots { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .gallery-dot { width: 3px; height: 3px; padding: 0; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .48); cursor: pointer; transition: width 200ms ease, height 200ms ease, background-color 200ms ease; }
+  .gallery-dot.is-active { width: 3px; height: 9px; background: rgba(255, 255, 255, .96); }
+  .gallery-arrow:focus-visible, .gallery-dot:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .art-caption { position: absolute; right: 14px; bottom: 12px; color: rgba(25, 27, 27, .62); font: 11px 'Noto Sans JP', sans-serif; writing-mode: vertical-rl; }
-  @media (pointer: coarse) { .detail-art.has-gallery .gallery-controls { opacity: 1; } }
+  @media (pointer: coarse) { .detail-art.has-gallery .gallery-sidebar { opacity: .7; } }
   @media (max-width: 767px) {
     .detail-modal { position: fixed; inset: 0; height: 100vh; height: 100dvh; min-height: 100svh; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
     .detail-inner { min-height: 100svh; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 22px; padding: 84px 20px 40px; }
     .detail-art { grid-row: 1; grid-column: 1; min-height: 42svh; height: 42svh; }
     .detail-art svg { width: min(100%, 474px); height: 42svh; }
-    .gallery-controls { bottom: 14px; gap: 10px; padding: 5px 7px; }
-    .gallery-arrow { width: 44px; height: 44px; font-size: 25px; }
-    .gallery-dot { min-width: 9px; min-height: 9px; }
-    .gallery-dot.is-active { width: 21px; }
+    .gallery-sidebar { left: 3px; width: 28px; gap: 6px; padding: 8px 0; transform: translateY(-50%); }
+    .gallery-arrow { width: 44px; height: 44px; font-size: 23px; }
+    .gallery-dot { width: 5px; height: 5px; }
+    .gallery-dot.is-active { width: 5px; height: 10px; }
     .detail-copy { grid-row: 2; grid-column: 1; justify-content: flex-start; }
     .detail-close { position: fixed; z-index: 70; top: 10px; left: 12px; min-height: 44px; margin: 0; padding: 0 12px; border: 1px solid rgba(25, 27, 27, .14); border-radius: 999px; background: rgba(244, 242, 237, .94); box-shadow: 0 4px 16px rgba(25, 27, 27, .06); }
     #detail-title { font-size: 44px; }

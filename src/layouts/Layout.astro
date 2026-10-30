@@ -34,8 +34,6 @@ const publicBase = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE
       <span class="cursor-label">
         <span data-cursor-label="cover">VER / <i lang="ja">注文</i></span>
         <span data-cursor-label="close">CERRAR / <i lang="ja">閉じる</i></span>
-        <span data-cursor-label="gallery-prev">ANT / <i lang="ja">前</i></span>
-        <span data-cursor-label="gallery-next">SIG / <i lang="ja">次</i></span>
       </span>
     </div>
     <div class="paper-grain" aria-hidden="true">
@@ -76,7 +74,6 @@ const publicBase = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE
   .cursor-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
   .cursor-label { display: none; flex-direction: column; align-items: center; gap: 2px; font-size: 8px; font-weight: 600; letter-spacing: .09em; white-space: nowrap; }
   .cursor-label [data-cursor-label="close"] { display: none; }
-  .cursor-label [data-cursor-label="gallery-prev"], .cursor-label [data-cursor-label="gallery-next"] { display: none; }
   .cursor-label i { font: 10px 'Noto Sans JP', sans-serif; letter-spacing: 0; }
   .cursor--spine { border-color: rgba(36, 78, 138, .28); }
   .cursor--button { border-color: rgba(36, 78, 138, .65); background: rgba(247, 244, 239, .9); }
@@ -91,12 +88,6 @@ const publicBase = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE
   .cursor--modal-close [data-cursor-label="cover"] { display: none; }
   .cursor--modal-close [data-cursor-label="close"] { display: block; }
   .cursor--modal-close .cursor-label { display: block; font-size: 8px; }
-  .cursor--gallery-prev, .cursor--gallery-next { width: 68px; height: 68px; border-color: rgba(36, 78, 138, .62); background: rgba(247, 244, 239, .93); color: var(--cobalt); opacity: .96; }
-  .cursor--gallery-prev .cursor-dot, .cursor--gallery-next .cursor-dot { display: none; }
-  .cursor--gallery-prev .cursor-label, .cursor--gallery-next .cursor-label { display: block; font-size: 8px; }
-  .cursor--gallery-prev [data-cursor-label="cover"], .cursor--gallery-prev [data-cursor-label="close"], .cursor--gallery-prev [data-cursor-label="gallery-next"],
-  .cursor--gallery-next [data-cursor-label="cover"], .cursor--gallery-next [data-cursor-label="close"], .cursor--gallery-next [data-cursor-label="gallery-prev"] { display: none; }
-  .cursor--gallery-prev [data-cursor-label="gallery-prev"], .cursor--gallery-next [data-cursor-label="gallery-next"] { display: block; }
   .cursor--modal-cta { width: 82px; height: 82px; border-color: #1F3FB0; background: #1F3FB0; color: #fff; opacity: .94; animation: cursor-pulse 1.7s ease-in-out infinite; }
   .cursor--modal-cta .cursor-label { display: none; }
   .cursor--returning { transition: opacity .3s ease, color .3s ease, background-color .3s ease, border-color .3s ease, width .3s ease, height .3s ease; }
