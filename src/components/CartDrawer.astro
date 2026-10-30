@@ -129,14 +129,20 @@
       }
       const amount = cartSubtotal(items);
       const message = [
-        '🍣 *NUEVO PEDIDO - TAKUMI OMAKASE*',
+        'Hola, quiero hacer este pedido:',
         '',
-        ...items.map((item) => `- ${item.quantity}x ${item.title} (${formatMXN(item.price * item.quantity)})`),
+        ...items.flatMap((item) => [
+          `- ${item.titleEs || item.title}`,
+          `  Piezas: ${item.quantity}`,
+          `  Precio: ${formatMXN(item.price)}`,
+          `  Subtotal: ${formatMXN(item.price * item.quantity)}`,
+          '',
+        ]),
+        `Total: ${formatMXN(amount)}`,
         '',
-        `Subtotal: ${formatMXN(amount)}`,
-        `*Total:* ${formatMXN(amount)}`,
+        'Me gustaría confirmar este pedido para recolección/entrega.',
         '',
-        '¡Hola! Me gustaría confirmar este pedido para recolección/entrega.',
+        'Gracias.',
       ].join('\n');
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
       feedback.textContent = 'Pedido preparado en WhatsApp.';

@@ -13,6 +13,19 @@ const STORAGE_KEY = 'takumi-omakase-cart-v1';
 let snapshot: CartItem[] | undefined;
 const subscribers = new Set<(items: CartItem[]) => void>();
 
+function notifySubscribers(): void {
+  const items = readCart();
+  subscribers.forEach((subscriber) => subscriber(items.map((item) => ({ ...item }))));
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    snapshot = undefined;
+    notifySubscribers();
+  });
+}
+
 function readCart(): CartItem[] {
   if (snapshot) return snapshot;
   if (typeof window === 'undefined') return [];
@@ -34,7 +47,7 @@ function publish(): void {
     try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { /* Storage may be unavailable in private contexts. */ }
     window.dispatchEvent(new CustomEvent('takumi:cart-updated', { detail: items }));
   }
-  subscribers.forEach((subscriber) => subscriber(items.map((item) => ({ ...item }))));
+  notifySubscribers();
 }
 
 export function getCart(): CartItem[] {
@@ -47,22 +60,23 @@ export function subscribeCart(subscriber: (items: CartItem[]) => void): () => vo
   return () => subscribers.delete(subscriber);
 }
 
-export function addToCart(input: CartItemInput): void {
+export function addItem(input: CartItemInput, quantity = 1): void {
+  if (!Number.isInteger(quantity) || quantity < 1) return;
   const items = readCart();
   const existing = items.find((item) => item.id === input.id);
   if (existing) {
-    existing.quantity += 1;
+    existing.quantity += quantity;
     existing.title = input.title;
     existing.titleEs = input.titleEs;
     existing.price = input.price;
     existing.thumbnail = input.thumbnail;
   } else {
-    items.push({ ...input, quantity: 1 });
+    items.push({ ...input, quantity });
   }
   publish();
 }
 
-export function setCartQuantity(id: string, quantity: number): void {
+export function updateQuantity(id: string, quantity: number): void {
   const items = readCart();
   const item = items.find((entry) => entry.id === id);
   if (!item) return;
@@ -74,9 +88,22 @@ export function setCartQuantity(id: string, quantity: number): void {
   publish();
 }
 
-export function removeFromCart(id: string): void {
+export function removeItem(id: string): void {
   snapshot = readCart().filter((item) => item.id !== id);
   publish();
+}
+
+export function clearCart(): void {
+  snapshot = [];
+  publish();
+}
+
+export function getTotalItems(items = readCart()): number {
+  return items.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+export function getTotalPrice(items = readCart()): number {
+  return cartSubtotal(items);
 }
 
 export function cartSubtotal(items = readCart()): number {
@@ -86,3 +113,20 @@ export function cartSubtotal(items = readCart()): number {
 export function formatMXN(amount: number): string {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(amount);
 }
+
+/** Facade matching the simple store API used by snackshop. */
+export const cartStore = {
+  get items(): CartItem[] { return getCart(); },
+  get totalItems(): number { return getTotalItems(); },
+  get totalPrice(): number { return getTotalPrice(); },
+  addItem,
+  removeItem,
+  updateQuantity,
+  clearCart,
+  subscribe: subscribeCart,
+};
+
+// Compatibility aliases for existing consumers in this project.
+export const addToCart = addItem;
+export const setCartQuantity = updateQuantity;
+export const removeFromCart = removeItem;
