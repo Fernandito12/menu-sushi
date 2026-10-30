@@ -255,7 +255,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       cursorMode = isOpen
         ? target?.closest('.detail-modal .close-btn') ? 'modal-close'
           : target?.closest('.detail-modal .cta-btn') ? 'modal-cta'
-            : target?.closest('[data-gallery-controls]') ? 'gallery-controls'
+            : target?.closest('.detail-modal .detail-art') ? 'gallery-controls'
             : 'modal'
         : target?.closest('.open .cv') ? 'open'
         : target?.closest('.spine') ? 'spine'
