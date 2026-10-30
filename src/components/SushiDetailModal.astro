@@ -27,6 +27,12 @@
             <feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="2" seed="17" result="ink-noise" />
             <feDisplacementMap in="SourceGraphic" in2="ink-noise" scale="120" xChannelSelector="R" yChannelSelector="G" />
           </filter>
+          <filter id="expo-adjacent-tone" x="0" y="0" width="100%" height="100%">
+            <feColorMatrix type="saturate" values=".85" />
+          </filter>
+          <clipPath id="expo-slide-clip" clipPathUnits="userSpaceOnUse">
+            <rect x="0" y="0" width="474" height="720" rx="20" />
+          </clipPath>
           <mask id="ink-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="474" height="900">
             <rect width="474" height="900" fill="black" />
             <g fill="white" filter="url(#sumi-warp)">
@@ -45,8 +51,8 @@
           <path d="M-10 690 C120 615 300 760 490 640" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="2" />
           <path d="M-10 720 C120 645 300 790 490 670" fill="none" stroke="rgba(25,27,27,.05)" stroke-width="1" />
         </g>
-        <image data-gallery-base href="" x="0" y="0" width="474" height="900" preserveAspectRatio="xMidYMid slice" opacity="0" />
-        <image data-gallery-reveal href="" x="0" y="0" width="474" height="900" preserveAspectRatio="xMidYMid slice" mask="url(#ink-mask)" />
+        <g data-gallery-base mask="url(#ink-mask)" opacity="0"></g>
+        <g data-gallery-reveal mask="url(#ink-mask)"></g>
         <rect x=".5" y=".5" width="473" height="899" fill="none" stroke="rgba(25,27,27,.14)" />
       </svg>
       <nav class="gallery-nav-pro" data-gallery-controls aria-label="Galería vertical de fotografías">
@@ -91,8 +97,8 @@
   const closeButton = modal?.querySelector<HTMLButtonElement>('[data-close]');
   const orderButton = modal?.querySelector<HTMLButtonElement>('[data-order]');
   const orderLabel = modal?.querySelector<HTMLElement>('[data-order-label]');
-  const galleryBase = modal?.querySelector<SVGImageElement>('[data-gallery-base]');
-  const galleryReveal = modal?.querySelector<SVGImageElement>('[data-gallery-reveal]');
+  const galleryBase = modal?.querySelector<SVGGElement>('[data-gallery-base]');
+  const galleryReveal = modal?.querySelector<SVGGElement>('[data-gallery-reveal]');
   const galleryArt = modal?.querySelector<HTMLElement>('.detail-art');
   const galleryDots = modal?.querySelector<HTMLElement>('[data-gallery-dots]');
   let galleryNumber = modal?.querySelector<HTMLElement>('[data-expo-num]') ?? null;
@@ -125,6 +131,7 @@
     let touchLastY = 0;
     let touchLastTime = 0;
     let touchVelocity = 0;
+    let touchOffset = 0;
     let touchIsVertical = false;
     let wheelLockedUntil = 0;
     let galleryAnimations: Animation[] = [];
@@ -185,9 +192,48 @@
       });
     };
 
-    const setSvgImage = (image: SVGImageElement, url: string) => {
-      image.setAttribute('href', url);
-      image.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
+    const slideHeight = 720;
+    const slideStep = 736;
+    const stageCenterY = 90;
+    const svgNamespace = 'http://www.w3.org/2000/svg';
+
+    const setGalleryTrack = (track: SVGGElement, activeIndex: number) => {
+      track.replaceChildren();
+      track.setAttribute('transform', `translate(0 ${stageCenterY})`);
+      track.style.removeProperty('transform');
+      track.style.transformBox = 'view-box';
+      track.style.transformOrigin = 'top center';
+
+      // Prev/next sit behind the active card; 720 of 900 viewBox units gives 1.25 slides per view.
+      const slots = [-1, 1, 0] as const;
+      slots.forEach((slot) => {
+        const imageIndex = ((activeIndex + slot) % galleryImages.length + galleryImages.length) % galleryImages.length;
+        const slide = document.createElementNS(svgNamespace, 'g');
+        const isActive = slot === 0;
+        const scale = isActive ? 1 : .88;
+        slide.setAttribute('class', `expo-slide${isActive ? ' is-active' : ' is-adjacent'}`);
+        slide.setAttribute('data-expo-slide', isActive ? 'active' : 'adjacent');
+        slide.setAttribute('opacity', isActive ? '1' : '.38');
+        if (!isActive) slide.setAttribute('filter', 'url(#expo-adjacent-tone)');
+        slide.setAttribute('transform', `translate(0 ${slot * slideStep}) translate(237 360) scale(${scale}) translate(-237 -360)`);
+
+        const photoWindow = document.createElementNS(svgNamespace, 'g');
+        photoWindow.setAttribute('clip-path', 'url(#expo-slide-clip)');
+        const image = document.createElementNS(svgNamespace, 'image');
+        image.dataset.expoImage = '';
+        image.setAttribute('x', '0');
+        image.setAttribute('y', '0');
+        image.setAttribute('width', '474');
+        image.setAttribute('height', String(slideHeight));
+        image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+        image.setAttribute('href', galleryImages[imageIndex]);
+        image.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', galleryImages[imageIndex]);
+        image.style.transformBox = 'fill-box';
+        image.style.transformOrigin = 'center center';
+        photoWindow.append(image);
+        slide.append(photoWindow);
+        track.append(slide);
+      });
     };
 
     const updateGalleryCounter = (selected: number, direction: number) => {
@@ -259,8 +305,8 @@
       if (!galleryImages.length) galleryImages = [''];
       galleryIndex = 0;
       galleryBaseIndex = 0;
-      setSvgImage(galleryBase, galleryImages[0]);
-      setSvgImage(galleryReveal, galleryImages[0]);
+      setGalleryTrack(galleryBase, 0);
+      setGalleryTrack(galleryReveal, 0);
       galleryBase.style.opacity = '0';
       galleryReveal.style.opacity = '1';
       renderGalleryDots(0);
@@ -290,14 +336,15 @@
 
     const finishGalleryReveal = (index: number) => {
       galleryBaseIndex = index;
-      setSvgImage(galleryBase, galleryImages[index]);
+      setGalleryTrack(galleryBase, index);
+      setGalleryTrack(galleryReveal, index);
       galleryBase.style.opacity = '1';
       galleryReveal.style.opacity = '0';
       galleryAnimations.splice(0).forEach((animation) => animation.cancel());
       inkDots.forEach((circle) => circle.setAttribute('r', '0'));
     };
 
-    const showGalleryImage = (index: number) => {
+    const showGalleryImage = (index: number, draggedOffset = 0) => {
       if (!isOpen || galleryImages.length < 2) return;
       const next = ((index % galleryImages.length) + galleryImages.length) % galleryImages.length;
       if (next === galleryIndex) return;
@@ -306,27 +353,31 @@
       const request = ++galleryRequest;
       cancelAnimationFrame(inkFrame);
       galleryAnimations.splice(0).forEach((animation) => animation.cancel());
+      finishGalleryReveal(galleryIndex);
       galleryIndex = next;
-      setSvgImage(galleryBase, galleryImages[galleryBaseIndex]);
+      setGalleryTrack(galleryReveal, next);
       galleryBase.style.opacity = '1';
-      setSvgImage(galleryReveal, galleryImages[next]);
       galleryReveal.style.opacity = '1';
       renderGalleryDots(next, direction);
-      const enterFrom = direction > 0 ? 72 : -72;
-      const leaveTo = direction > 0 ? -42 : 42;
       const expoStyles = getComputedStyle(galleryArt);
-      galleryBase.style.transformBox = 'fill-box';
-      galleryBase.style.transformOrigin = 'center';
-      galleryReveal.style.transformBox = 'fill-box';
-      galleryReveal.style.transformOrigin = 'center';
+      const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : Number.parseFloat(expoStyles.getPropertyValue('--expo-duration')) || 800;
       const easing = expoStyles.getPropertyValue('--expo-ease').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
-      const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : Number.parseFloat(expoStyles.getPropertyValue('--expo-duration')) || 720;
       const outgoing = galleryBase.animate([
-        { transform: 'translateY(0) scale(1)', opacity: 1 },
-        { transform: `translateY(${leaveTo}px) scale(.9)`, opacity: 0 },
+        { transform: `translateY(${stageCenterY + draggedOffset}px)`, opacity: 1 },
+        { transform: `translateY(${stageCenterY + draggedOffset - direction * slideStep}px)`, opacity: 0 },
       ], { duration, easing, fill: 'forwards' });
       const incoming = galleryReveal.animate([
-        { transform: `translateY(${enterFrom}px) scale(1.15)`, opacity: 0 },
+        { transform: `translateY(${stageCenterY + direction * slideStep + draggedOffset}px)`, opacity: .38 },
+        { transform: `translateY(${stageCenterY}px)`, opacity: 1 },
+      ], { duration, easing, fill: 'forwards' });
+      const outgoingImage = galleryBase.querySelector<SVGImageElement>('[data-expo-slide="active"] [data-expo-image]');
+      const incomingImage = galleryReveal.querySelector<SVGImageElement>('[data-expo-slide="active"] [data-expo-image]');
+      const outgoingPhoto = outgoingImage?.animate([
+        { transform: 'scale(1)', opacity: 1 },
+        { transform: 'scale(.9)', opacity: 0 },
+      ], { duration, easing, fill: 'forwards' });
+      const incomingPhoto = incomingImage?.animate([
+        { transform: 'translateY(24px) scale(1.15)', opacity: 0 },
         { transform: 'translateY(0) scale(1)', opacity: 1 },
       ], { duration, easing, fill: 'forwards' });
       const parallax = Number.parseFloat(expoStyles.getPropertyValue('--expo-parallax')) || 18;
@@ -335,13 +386,13 @@
         { transform: `translateY(${backdropFrom}px) scale(1.035)`, opacity: .82 },
         { transform: 'translateY(0) scale(1)', opacity: 1 },
       ], { duration: duration * .88, easing, fill: 'forwards' });
-      galleryAnimations = [outgoing, incoming, ...(backdropAnimation ? [backdropAnimation] : [])];
+      galleryAnimations = [outgoing, incoming, ...(outgoingPhoto ? [outgoingPhoto] : []), ...(incomingPhoto ? [incomingPhoto] : []), ...(backdropAnimation ? [backdropAnimation] : [])];
       let expoDone = false;
       let inkDone = false;
       const complete = () => {
         if (request === galleryRequest && expoDone && inkDone) finishGalleryReveal(next);
       };
-      void Promise.allSettled([outgoing.finished, incoming.finished]).then(() => {
+      void Promise.allSettled([outgoing.finished, incoming.finished, ...(outgoingPhoto ? [outgoingPhoto.finished] : []), ...(incomingPhoto ? [incomingPhoto.finished] : [])]).then(() => {
         expoDone = true;
         complete();
       });
@@ -474,6 +525,7 @@
       touchLastY = touch.clientY;
       touchLastTime = performance.now();
       touchVelocity = 0;
+      touchOffset = 0;
       touchIsVertical = false;
     }, { passive: true });
     galleryArt.addEventListener('touchmove', (event) => {
@@ -484,6 +536,10 @@
       if (!touchIsVertical && Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx) * 1.1) touchIsVertical = true;
       if (!touchIsVertical) return;
       event.preventDefault();
+      const svg = galleryArt.querySelector('svg');
+      const svgHeight = svg?.getBoundingClientRect().height || galleryArt.clientHeight || 900;
+      touchOffset = Math.max(-slideStep * .58, Math.min(slideStep * .58, dy * (900 / svgHeight)));
+      galleryBase.style.transform = `translateY(${stageCenterY + touchOffset}px)`;
       const now = performance.now();
       const sampleTime = Math.max((now - touchLastTime) / 1000, 1 / 240);
       touchVelocity = (touch.clientY - touchLastY) / sampleTime;
@@ -496,8 +552,20 @@
       const total = touch.clientY - touchStartY;
       if (Math.abs(total) > 36) {
         const momentumSteps = Math.abs(touchVelocity) > 1250 ? 2 : 1;
-        showGalleryImage(galleryIndex + (total < 0 ? momentumSteps : -momentumSteps));
+        showGalleryImage(galleryIndex + (total < 0 ? momentumSteps : -momentumSteps), touchOffset);
+      } else {
+        const returnAnimation = galleryBase.animate(
+          [{ transform: `translateY(${stageCenterY + touchOffset}px)` }, { transform: `translateY(${stageCenterY}px)` }],
+          { duration: 360, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' },
+        );
+        galleryAnimations.push(returnAnimation);
+        void returnAnimation.finished.then(() => {
+          galleryAnimations = galleryAnimations.filter((animation) => animation !== returnAnimation);
+          returnAnimation.cancel();
+          galleryBase.style.removeProperty('transform');
+        }, () => {});
       }
+      touchOffset = 0;
       touchIsVertical = false;
     }, { passive: true });
     galleryArt.addEventListener('wheel', (event) => {
@@ -565,10 +633,12 @@
   .detail-order { transition: background-color .25s ease, border-color .25s ease, transform .35s cubic-bezier(.2,.72,.18,1); }
   .detail-order b { font: 400 16px 'Inter Tight', sans-serif; }
   .detail-close:focus-visible, .detail-order:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 4px; }
-  .detail-art { --expo-duration: 720ms; --expo-counter-duration: 520ms; --expo-parallax: 18px; --expo-ease: cubic-bezier(0.16, 1, 0.3, 1); position: relative; min-width: 0; min-height: min(82vh, 900px); display: grid; place-items: center; }
+  .detail-art { --expo-duration: 800ms; --expo-counter-duration: 520ms; --expo-parallax: 18px; --expo-ease: cubic-bezier(0.16, 1, 0.3, 1); position: relative; min-width: 0; min-height: min(82vh, 900px); display: grid; place-items: center; }
   .detail-art { touch-action: pan-x; }
-  .detail-art svg { display: block; width: min(100%, 474px); height: min(82vh, 900px); overflow: visible; background: #e5dfd3; }
-  .detail-art svg image[data-gallery-base], .detail-art svg image[data-gallery-reveal] { transform-box: fill-box; transform-origin: center; }
+  .detail-art svg { display: block; width: min(100%, 474px); height: min(82vh, 900px); overflow: hidden; background: #e5dfd3; }
+  .detail-art svg [data-gallery-base], .detail-art svg [data-gallery-reveal] { transform-box: view-box; transform-origin: top center; will-change: transform, opacity; }
+  .detail-art svg .expo-slide image { display: block; }
+  .detail-art svg .expo-slide.is-adjacent { filter: url(#expo-adjacent-tone); }
   .gallery-nav-pro { position: absolute; z-index: 10; left: 18px; top: 50%; display: flex; flex-direction: column; align-items: center; gap: 6px; transform: translateY(-50%); pointer-events: auto; color: #fff; opacity: .52; transition: opacity .4s ease; }
   .gallery-nav-pro:hover, .gallery-nav-pro:focus-within { opacity: .96; }
   .expo-rail { position: absolute; z-index: -1; top: 57px; bottom: 57px; left: 50%; width: 1px; transform: translateX(-50%); background: rgba(255,255,255,.2); pointer-events: none; }
@@ -579,8 +649,8 @@
   .expo-total { opacity: .6; }
   .expo-progress { display: flex; flex-direction: column; align-items: center; gap: 7px; }
   .expo-mark { width: 32px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; }
-  .expo-mark::before { content: ''; width: 1px; height: 12px; background: rgba(255,255,255,.46); transition: height .42s cubic-bezier(.16,1,.3,1), background-color .3s ease, box-shadow .3s ease; }
-  .expo-mark.is-active::before { height: 24px; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.35); }
+  .expo-mark::before { content: ''; width: 1px; height: 8px; background: rgba(255,255,255,.46); transition: height .42s cubic-bezier(.16,1,.3,1), background-color .3s ease, box-shadow .3s ease; }
+  .expo-mark.is-active::before { height: 32px; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.35); }
   .gallery-arrow { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: currentColor; cursor: pointer; opacity: .48; transition: opacity .28s ease, transform .4s cubic-bezier(.16,1,.3,1); }
   .gallery-arrow svg { display: block; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1px; stroke-linecap: round; stroke-linejoin: round; }
   .gallery-arrow:hover, .gallery-nav-pro:focus-within .gallery-arrow { opacity: 1; }
