@@ -51,8 +51,6 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
           </article>
         ))}
       </div>
-      <button class="stage-nav stage-prev btn" type="button" data-nav="-1" aria-label="Platillo anterior">‹</button>
-      <button class="stage-nav stage-next btn" type="button" data-nav="1" aria-label="Platillo siguiente">›</button>
     </div>
     <div class="shelf" aria-hidden="true"></div>
     <p class="stage-hint">ELIGE UNA PIEZA <span>✳</span> 12 ESPECIALIDADES</p>
@@ -359,9 +357,6 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     }, { passive: false });
 
     const viewport = shelf.querySelector<HTMLElement>('.shelf-section__viewport');
-    shelf.querySelectorAll<HTMLButtonElement>('.stage-nav').forEach((button) => button.addEventListener('click', () => {
-      T += Number(button.dataset.nav ?? 0);
-    }));
     viewport?.addEventListener('pointerdown', (event) => {
       const pointer = event as PointerEvent;
       if (pointer.button !== 0) return;
@@ -424,7 +419,6 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     viewport?.addEventListener('pointercancel', finishPointer);
 
     viewport?.addEventListener('click', (event) => {
-      if (event.target instanceof Element && event.target.closest('.stage-nav')) return;
       if (dragMoved) {
         dragMoved = false;
         return;
@@ -526,9 +520,6 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   .shelf::before { content: ''; position: absolute; z-index: -1; left: 50%; top: -20px; width: 78%; height: 44px; transform: translateX(-50%) scaleX(var(--shadow-scale)); transform-origin: center; background: radial-gradient(ellipse at center, rgba(20,20,20,0.12) 0%, transparent 70%); opacity: var(--shadow-strength); filter: blur(var(--shadow-blur)); transition: opacity 140ms linear, filter 140ms linear, transform 140ms linear; }
   .stage-hint { z-index: 1; margin: -5px 0 0; color: #827e75; font-size: 8px; }
   .stage-hint span { padding: 0 10px; color: var(--cobalt); }
-  .stage-nav { position: absolute; z-index: 4; top: 50%; display: grid; width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid var(--rule); border-radius: 50%; transform: translateY(-50%); background: rgba(247, 244, 239, .84); color: var(--ink); font: 300 28px/1 'Newsreader', serif; touch-action: manipulation; }
-  .stage-prev { left: max(16px, 4vw); }
-  .stage-next { right: max(16px, 4vw); }
   :global(.caption-mask) { z-index: 1; position: relative; width: min(720px, 88vw); height: 104px; margin: 5px auto 0; overflow: hidden; text-align: center; }
   :global(.caption-content) { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 36px 24px; align-content: center; align-items: start; padding: 0 8%; will-change: transform, opacity; transition: transform .48s var(--ease), opacity .48s var(--ease); }
   :global(.caption-content.from-below) { transform: translateY(100%); opacity: 0; }
@@ -571,9 +562,6 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     .shelf-section__viewport { height: min(40svh, 330px); min-height: 240px; perspective: 1200px; perspective-origin: 50% 46%; touch-action: pan-y; }
     .stage { transform: translateZ(0) rotateX(-3deg); }
     .geometry-probe { height: min(48vw, 34svh) !important; }
-    .stage-nav { width: 44px; height: 44px; }
-    .stage-prev { left: 3vw; }
-    .stage-next { right: 3vw; }
     .shelf { bottom: 14%; }
     .stage-hint { margin-top: 2px; }
     :global(.caption-mask) { width: min(94vw, 520px); height: 94px; margin-top: 2px; }
