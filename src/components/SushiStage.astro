@@ -3,14 +3,17 @@ import { sushiData } from '../data/sushiData';
 import SushiDetailModal from './SushiDetailModal.astro';
 const tapes = Array.from({ length: 3 }, (_, turn) => sushiData.map((item, index) => ({ item, index: turn * sushiData.length + index })) ).flat();
 const categories = [
-  { label: 'TODOS', value: 'all' },
-  { label: 'NIGIRI', value: 'nigiri' },
-  { label: 'MAKI', value: 'maki' },
-  { label: 'SASHIMI', value: 'sashimi' },
-  { label: 'ESPECIALES', value: 'specials' },
+  { label: 'TODOS / すべて', value: 'all' },
+  { label: 'ENTRADAS / 前菜', value: 'entradas' },
+  { label: 'NIGIRI / 握り', value: 'nigiri' },
+  { label: 'MAKI / 巻き', value: 'maki' },
+  { label: 'SASHIMI / 刺身', value: 'sashimi' },
+  { label: 'ESPECIALES / 特別', value: 'specials' },
+  { label: 'BEBIDAS / 飲物', value: 'bebidas' },
+  { label: 'POSTRES / 甘味', value: 'postres' },
 ];
 const categoryNames: Record<string, string> = {
-  nigiri: 'Nigiri', maki: 'Maki', sashimi: 'Sashimi', specials: 'Especiales',
+  entradas: 'Entradas', nigiri: 'Nigiri', maki: 'Maki', sashimi: 'Sashimi', specials: 'Especiales', bebidas: 'Bebidas', postres: 'Postres',
 };
 const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
   `--cx:${crop.x};--cy:${crop.y};--cw:${crop.w};--ch:${crop.h}`;
@@ -478,6 +481,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         candidate.classList.toggle('active', selected);
         candidate.setAttribute('aria-pressed', String(selected));
       });
+      tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }));
 
     window.addEventListener('resize', () => {

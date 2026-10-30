@@ -90,7 +90,7 @@
   const inkDots = Array.from(modal?.querySelectorAll<SVGCircleElement>('[data-ink-dot]') ?? []);
   const lineMasks = Array.from(modal?.querySelectorAll<HTMLElement>('[data-detail-line]') ?? []);
   const categoryNames: Record<string, string> = {
-    nigiri: 'Nigiri', maki: 'Maki', sashimi: 'Sashimi', specials: 'Especiales',
+    entradas: 'Entradas', nigiri: 'Nigiri', maki: 'Maki', sashimi: 'Sashimi', specials: 'Especiales', bebidas: 'Bebidas', postres: 'Postres',
   };
 
   if (modal && inner && closeButton && orderButton && galleryBase && galleryReveal && galleryArt && galleryDots && previousPhotoButton && nextPhotoButton) {

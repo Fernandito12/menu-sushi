@@ -1,4 +1,4 @@
-export type SushiCategory = 'nigiri' | 'maki' | 'sashimi' | 'specials';
+export type SushiCategory = 'entradas' | 'nigiri' | 'maki' | 'sashimi' | 'specials' | 'bebidas' | 'postres';
 
 export interface SushiItem {
   id: string;
@@ -33,6 +33,14 @@ const galleries = {
   softShellCrab: [photo('photo-1713453018516-b08018818c0c'), photo('photo-1749321834585-bda3df817655'), photo('photo-1637074930269-089fde202b57')],
   scallopSashimi: [photo('photo-1772285283419-b34f42b4a4df'), photo('photo-1754211152988-c0622613211e'), photo('photo-1772285268647-11deb0bdbe29')],
   ceremonialMatcha: [photo('photo-1755685068178-4b57210ddcd4'), photo('photo-1753009712810-3f72c3f72548'), photo('photo-1515823064-d6e0c04616a7')],
+  edamame: [photo('photo-1547592180-85f173990554'), photo('photo-1512621776951-a57141f2eefd'), photo('photo-1547592180-85f173990554')],
+  porkGyoza: [photo('photo-1563245372-f21724e3856d'), photo('photo-1749321834585-bda3df817655'), photo('photo-1563245372-f21724e3856d')],
+  spicyEdamame: [photo('photo-1512621776951-a57141f2eefd'), photo('photo-1547592180-85f173990554'), photo('photo-1512621776951-a57141f2eefd')],
+  sake: [photo('photo-1513558161293-cdaf765edfd47'), photo('photo-1515823064-d6e0c04616a7'), photo('photo-1513558161293-cdaf765edfd47')],
+  sapporo: [photo('photo-1535958636474-b021ee887b13'), photo('photo-1513558161293-cdaf765edfd47'), photo('photo-1535958636474-b021ee887b13')],
+  icedMatcha: [photo('photo-1515823064-d6e0c04616a7'), photo('photo-1755685068178-4b57210ddcd4'), photo('photo-1753009712810-3f72c3f72548')],
+  matchaMochi: [photo('photo-1582176604856-e824b4736522'), photo('photo-1755685068178-4b57210ddcd4'), photo('photo-1582176604856-e824b4736522')],
+  blackSesameIceCream: [photo('photo-1563805042-7684c019e1cb'), photo('photo-1582176604856-e824b4736522'), photo('photo-1563805042-7684c019e1cb')],
 };
 
 export const sushiData: SushiItem[] = [
@@ -143,5 +151,69 @@ export const sushiData: SushiItem[] = [
     sakePairing: 'Sin sake · acompáñalo con agua mineral para apreciar el umami y el amargor del té.',
     synopsis: 'Matcha batido a mano al estilo usucha: vegetal, fragante y con un amargor equilibrado.',
     spineCrop: { x: 0.75, y: 0.6666, w: 0.25, h: 0.3334 }, coverCrop: { x: 0.75, y: 0.6666, w: 0.25, h: 0.3334 },
+  },
+  {
+    id: 'edamame-steamed', title: 'Steamed Edamame', titleEs: 'Edamame al vapor', romaji: 'Mushi Edamame', kanji: '塩茹で枝豆', category: 'entradas', price: 95,
+    images: galleries.edamame,
+    ingredients: ['Edamame', 'sal de mar'], allergens: ['Soya'],
+    sakePairing: 'Junmai ginjo frío · su final limpio acompaña la salinidad de la soya tierna.',
+    synopsis: 'Vainas de soya jóvenes cocidas al vapor y terminadas con sal de mar; un inicio ligero y clásico.',
+    spineCrop: { x: 0, y: 0, w: 0.25, h: 0.3333 }, coverCrop: { x: 0, y: 0, w: 0.25, h: 0.3333 },
+  },
+  {
+    id: 'pork-gyoza', title: 'Pork Gyoza', titleEs: 'Gyozas de cerdo', romaji: 'Buta Gyōza', kanji: '豚餃子', category: 'entradas', price: 145,
+    images: galleries.porkGyoza,
+    ingredients: ['Cerdo', 'col', 'cebollín', 'jengibre', 'ajo', 'masa de trigo', 'salsa de soya'], allergens: ['Gluten', 'Soya', 'Sésamo'],
+    sakePairing: 'Junmai honjozo frío · equilibra el dorado de la masa y el relleno jugoso.',
+    synopsis: 'Empanadillas japonesas doradas por un lado y cocidas al vapor, rellenas de cerdo, col y jengibre.',
+    spineCrop: { x: 0.25, y: 0, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.25, y: 0, w: 0.25, h: 0.3333 },
+  },
+  {
+    id: 'edamame-spicy', title: 'Spicy Edamame', titleEs: 'Edamame picante', romaji: 'Pirikara Edamame', kanji: '辛枝豆', category: 'entradas', price: 110,
+    images: galleries.spicyEdamame,
+    ingredients: ['Edamame', 'shichimi tōgarashi', 'aceite de sésamo', 'sal de mar'], allergens: ['Soya', 'Sésamo'],
+    sakePairing: 'Junmai karakuchi frío · su sequedad suaviza el picor del shichimi.',
+    synopsis: 'Edamame salteado con aceite de sésamo y shichimi tōgarashi, con picor aromático y final tostado.',
+    spineCrop: { x: 0.5, y: 0, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.5, y: 0, w: 0.25, h: 0.3333 },
+  },
+  {
+    id: 'junmai-daiginjo-sake', title: 'Junmai Daiginjo Sake', titleEs: 'Sake Junmai Daiginjo', romaji: 'Junmai Daiginjō', kanji: '純米大吟醸', category: 'bebidas', price: 220,
+    images: galleries.sake,
+    ingredients: ['Arroz pulido', 'koji', 'agua'], allergens: [],
+    sakePairing: 'Servicio sugerido · frío, entre 8 y 12 °C, en copa pequeña.',
+    synopsis: 'Sake premium de arroz, de perfil floral y delicado; servir frío para conservar su aroma limpio.',
+    spineCrop: { x: 0.75, y: 0, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.75, y: 0, w: 0.25, h: 0.3333 },
+  },
+  {
+    id: 'sapporo-beer', title: 'Sapporo Beer', titleEs: 'Cerveza Sapporo', romaji: 'Sapporo Bīru', kanji: 'サッポロビール', category: 'bebidas', price: 95,
+    images: galleries.sapporo,
+    ingredients: ['Agua', 'malta de cebada', 'lúpulo', 'levadura'], allergens: ['Gluten'],
+    sakePairing: 'Servicio sugerido · lager japonesa fría, ideal con tempura y gyozas.',
+    synopsis: 'Lager japonesa de cuerpo ligero, burbuja fina y final seco; servir bien fría.',
+    spineCrop: { x: 0, y: 0.3333, w: 0.25, h: 0.3333 }, coverCrop: { x: 0, y: 0.3333, w: 0.25, h: 0.3333 },
+  },
+  {
+    id: 'iced-matcha', title: 'Iced Matcha', titleEs: 'Té matcha helado', romaji: 'Aisu Matcha', kanji: '冷抹茶', category: 'bebidas', price: 85,
+    images: galleries.icedMatcha,
+    ingredients: ['Té verde matcha', 'agua', 'hielo'], allergens: [],
+    sakePairing: 'Sin sake · bebida fresca y vegetal para acompañar el menú.',
+    synopsis: 'Matcha batido con agua y servido sobre hielo; intenso, vegetal y sin endulzar.',
+    spineCrop: { x: 0.25, y: 0.3333, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.25, y: 0.3333, w: 0.25, h: 0.3333 },
+  },
+  {
+    id: 'matcha-mochi', title: 'Matcha Mochi', titleEs: 'Mochi de matcha', romaji: 'Matcha Mochi', kanji: '抹茶餅', category: 'postres', price: 110,
+    images: galleries.matchaMochi,
+    ingredients: ['Harina de arroz glutinoso', 'pasta de frijol blanco', 'matcha', 'azúcar'], allergens: [],
+    sakePairing: 'Té sencha · sus notas herbales prolongan el sabor del matcha.',
+    synopsis: 'Mochi suave relleno de pasta dulce y perfumado con matcha japonés.',
+    spineCrop: { x: 0.5, y: 0.3333, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.5, y: 0.3333, w: 0.25, h: 0.3333 },
+  },
+  {
+    id: 'black-sesame-ice-cream', title: 'Black Sesame Ice Cream', titleEs: 'Helado de sésamo negro', romaji: 'Kuro Goma Aisu', kanji: '黒胡麻アイス', category: 'postres', price: 105,
+    images: galleries.blackSesameIceCream,
+    ingredients: ['Crema', 'leche', 'sésamo negro', 'azúcar'], allergens: ['Leche', 'Sésamo'],
+    sakePairing: 'Té hojicha · su tostado armoniza con las notas de nuez del sésamo.',
+    synopsis: 'Helado cremoso de sésamo negro tostado, con notas profundas de nuez y dulzor equilibrado.',
+    spineCrop: { x: 0.75, y: 0.3333, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.75, y: 0.3333, w: 0.25, h: 0.3333 },
   },
 ];
