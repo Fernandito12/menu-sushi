@@ -1,7 +1,7 @@
 ---
 import { sushiData } from '../data/sushiData';
 const tapes = Array.from({ length: 3 }, (_, turn) => sushiData.map((item, index) => ({ item, index: turn * sushiData.length + index })) ).flat();
-const categories = ['Nigiri', 'Maki', 'Sashimi', 'Omakase'];
+const categories = ['ALL', 'NIGIRI', 'MAKI', 'SASHIMI', 'SPECIALS'];
 const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
   `--cx:${crop.x};--cy:${crop.y};--cw:${crop.w};--ch:${crop.h}`;
 ---
@@ -11,7 +11,9 @@ const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
       <span class="brand-name">TAKUMI OMAKASE</span><span class="brand-kanji" lang="ja">匠</span>
     </a>
     <nav class="categories" aria-label="Categorías del menú">
-      {categories.map((category, i) => <span class:list={['category', { active: i === 0 }]}>{category}</span>)}
+      {categories.map((category, i) => (
+        <button class:list={['category', { active: i === 0 }]} type="button" data-category={category.toLowerCase()} aria-pressed={i === 0 ? 'true' : 'false'}>{category}</button>
+      ))}
     </nav>
     <span class="edition">MENÚ · 01</span>
   </header>
@@ -22,7 +24,7 @@ const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
     <div class="shelf-section__viewport">
       <div class="stage">
         {tapes.map(({ item, index }) => (
-          <article class="tape" style={`--i:${index};--turn:${Math.floor(index / sushiData.length)};`} aria-label={`${item.title}, $${item.price} MXN`}>
+          <article class="tape" data-index={index} data-category={item.category} style={`--i:${index};--turn:${Math.floor(index / sushiData.length)};`} aria-label={`${item.title}, $${item.price} MXN`}>
             <div class="sp" style={cropStyle(item.spineCrop)} aria-hidden="true">
               <span class="sp-title">{item.title}</span><span class="sp-kanji" lang="ja">{item.kanji}</span>
             </div>
@@ -49,6 +51,147 @@ const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
   </footer>
 </section>
 
+<script>
+  const shelf = document.querySelector<HTMLElement>('.shelf-section');
+  const stage = shelf?.querySelector<HTMLElement>('.stage');
+  const cards = Array.from(shelf?.querySelectorAll<HTMLElement>('.tape') ?? []);
+  const tabs = Array.from(shelf?.querySelectorAll<HTMLButtonElement>('.category') ?? []);
+
+  if (shelf && stage && cards.length) {
+    const count = cards.length;
+    const mod = (value: number, length: number) => ((value % length) + length) % length;
+    const shortestDistance = (from: number, to: number) => mod(to - from + count / 2, count) - count / 2;
+    const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+    const B = (r: number) => (r + Math.sin(Math.PI * r) / Math.PI) / 2;
+
+    // Preload the shared atlas before the first animated frame paints.
+    const atlas = new Image();
+    atlas.decoding = 'async';
+    atlas.src = new URL('/images/sushi-atlas.jpg', window.location.href).href;
+
+    // Use the same rendered card height as the geometry source for all dimensions.
+    const probe = document.createElement('div');
+    probe.className = 'tape geometry-probe';
+    probe.setAttribute('aria-hidden', 'true');
+    stage.append(probe);
+    const H = probe.getBoundingClientRect().height;
+    probe.remove();
+
+    let cardHeight = H || Math.min(330, Math.max(230, window.innerHeight * 0.38));
+    let ws = Math.max(16, cardHeight * 0.14);
+    let d = Math.max(140, cardHeight * 0.68);
+    shelf.style.setProperty('--H', `${cardHeight}px`);
+    shelf.style.setProperty('--ws', `${ws}px`);
+    shelf.style.setProperty('--d', `${d}px`);
+
+    let s = 0;
+    let T = 0;
+    let lastTime = 0;
+    let pointerStartX = 0;
+    let pointerStartT = 0;
+    let dragging = false;
+    let frame = 0;
+
+    const animate = (now: number) => {
+      const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 0;
+      lastTime = now;
+      s += (T - s) * (1 - Math.exp(-10 * dt));
+
+      cards.forEach((card, index) => {
+        const r = shortestDistance(s, index);
+        const absR = Math.abs(r);
+        const side = Math.sign(r);
+        // B eases the neighboring spines outward as the active cover opens.
+        const easedSpread = 2 * B(clamp(absR, 0, 1)) * d;
+        const x = r * ws + side * easedSpread;
+        const active = absR < 0.5;
+        const open = active ? 1 - absR * 2 : 0;
+        const tiltY = open * 90;
+        const rotateY = active ? -90 + tiltY : -90;
+        const translateY = active ? -cardHeight * 0.035 : 0;
+        const translateZ = active ? 0.2 * cardHeight : 0;
+        const rotateZ = active ? -4.5 : 0;
+        card.style.transform = `translate3d(${x}px, ${translateY}px, ${translateZ}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`;
+        card.style.zIndex = String(Math.round(1000 - absR * 10));
+
+        const shade = (0.55 + 0.45 * Math.cos(Math.abs(rotateY) * Math.PI / 180)).toFixed(3);
+        card.querySelectorAll<HTMLElement>('.sp, .cv').forEach((face) => face.style.setProperty('--shade', shade));
+      });
+
+      frame = requestAnimationFrame(animate);
+    };
+
+    frame = requestAnimationFrame(animate);
+
+    shelf.querySelector('.shelf-section__viewport')?.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      const wheel = event as WheelEvent;
+      const delta = wheel.deltaY || wheel.deltaX;
+      const unit = wheel.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : wheel.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight : 1;
+      T += (delta * unit / Math.max(ws, d)) * 0.85;
+    }, { passive: false });
+
+    const viewport = shelf.querySelector<HTMLElement>('.shelf-section__viewport');
+    viewport?.addEventListener('pointerdown', (event) => {
+      const pointer = event as PointerEvent;
+      if (pointer.button !== 0) return;
+      dragging = true;
+      pointerStartX = pointer.clientX;
+      pointerStartT = T;
+      viewport.setPointerCapture(pointer.pointerId);
+    });
+    viewport?.addEventListener('pointermove', (event) => {
+      if (!dragging) return;
+      const pointer = event as PointerEvent;
+      T = pointerStartT - (pointer.clientX - pointerStartX) / Math.max(ws, 1);
+    });
+    const finishPointer = (event: PointerEvent) => {
+      dragging = false;
+      if (viewport?.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
+    };
+    viewport?.addEventListener('pointerup', finishPointer);
+    viewport?.addEventListener('pointercancel', finishPointer);
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      event.preventDefault();
+      T += event.key === 'ArrowRight' ? 1 : -1;
+    });
+
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      const category = tab.dataset.category ?? 'all';
+      const first = category === 'all'
+        ? 0
+        : cards.find((card) => card.dataset.category === category)?.dataset.index;
+      if (first === undefined) return;
+      const firstIndex = Number(first);
+      T += shortestDistance(mod(T, count), firstIndex);
+      tabs.forEach((candidate) => {
+        const selected = candidate === tab;
+        candidate.classList.toggle('active', selected);
+        candidate.setAttribute('aria-pressed', String(selected));
+      });
+    }));
+
+    window.addEventListener('resize', () => {
+      const nextProbe = document.createElement('div');
+      nextProbe.className = 'tape geometry-probe';
+      stage.append(nextProbe);
+      const nextH = nextProbe.getBoundingClientRect().height || Math.min(330, Math.max(230, window.innerHeight * 0.38));
+      nextProbe.remove();
+      cardHeight = nextH;
+      ws = Math.max(16, nextH * 0.14);
+      d = Math.max(140, nextH * 0.68);
+      shelf.style.setProperty('--H', `${nextH}px`);
+      shelf.style.setProperty('--ws', `${ws}px`);
+      shelf.style.setProperty('--d', `${d}px`);
+    });
+
+    window.addEventListener('pagehide', () => cancelAnimationFrame(frame), { once: true });
+  }
+</script>
+
 <style>
   .shelf-section { min-height: 100svh; display: flex; flex-direction: column; overflow: hidden; position: relative; perspective: 2200px; background: var(--paper); }
   .topbar { z-index: 2; display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; padding: 25px 4.2vw; border-bottom: 1px solid var(--rule); }
@@ -57,19 +200,20 @@ const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
   .brand-name { font-size: 11px; font-weight: 600; }
   .brand-kanji { font: 21px 'Noto Sans JP', sans-serif; color: var(--cobalt); }
   .categories { display: flex; align-items: center; justify-content: center; gap: clamp(14px, 2.6vw, 38px); }
-  .category { font-size: 9px; color: #898780; }
+  .category { appearance: none; border: 0; padding: 0; background: transparent; cursor: pointer; font-size: 9px; color: #898780; }
   .category.active { color: var(--cobalt); }
   .category.active::before { content: ''; display: inline-block; width: 5px; height: 5px; margin: 0 7px 1px 0; border-radius: 50%; background: var(--cobalt); }
   .edition { justify-self: end; font-size: 9px; color: #77746e; }
   .stage-wrap { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 650px; padding: 35px 0 40px; perspective: 2200px; }
   .eyebrow { z-index: 1; margin: 0 0 10px; color: var(--cobalt); font-size: 9px; }
   h1 { z-index: 1; margin: 0; font: 400 clamp(28px, 3.2vw, 48px)/1.1 'Newsreader', serif; letter-spacing: -.035em; }
-  .shelf-section__viewport { width: 100%; height: clamp(360px, 48vh, 510px); position: relative; display: grid; place-items: center; perspective: 2200px; perspective-origin: 50% 43%; }
-  .stage { position: relative; width: 1px; height: 1px; transform-style: preserve-3d; transform: rotateX(-5deg) rotateY(-90deg); }
-  .tape { position: absolute; left: -105px; top: -150px; width: 210px; height: 300px; transform-style: preserve-3d; transform: rotateY(calc(var(--i) * 10deg)) translateZ(510px); }
-  .cv, .sp { position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; box-shadow: 0 18px 35px rgba(37, 31, 20, .17), 0 2px 5px rgba(37, 31, 20, .14); }
-  .cv { display: flex; align-items: flex-end; color: #fff; background-color: #5b4c3c; background-image: linear-gradient(0deg, rgba(20, 17, 14, .78), transparent 56%), url('/images/sushi-atlas.jpg'); background-size: cover, calc(100% / var(--cw)) calc(100% / var(--ch)); background-position: center, calc(var(--cx) / (1 - var(--cw)) * 100%) calc(var(--cy) / (1 - var(--ch)) * 100%); }
-  .sp { transform: rotateY(90deg) translateZ(105px); width: 210px; transform-origin: left center; background-color: #7b6548; background-image: linear-gradient(90deg, rgba(30, 24, 17, .45), rgba(255,255,255,.12)), url('/images/sushi-atlas.jpg'); background-size: cover, calc(100% / var(--cw)) calc(100% / var(--ch)); background-position: center, calc(var(--cx) / (1 - var(--cw)) * 100%) calc(var(--cy) / (1 - var(--ch)) * 100%); color: #fffaf0; }
+  .shelf-section__viewport { width: 100%; height: clamp(360px, 48vh, 510px); position: relative; display: grid; place-items: center; perspective: 2200px; perspective-origin: 50% 43%; touch-action: pan-y; }
+  .stage { position: relative; width: 1px; height: 1px; transform-style: preserve-3d; transform: rotateX(-5deg); }
+  .tape { position: absolute; left: calc(var(--d, 210px) / -2); top: calc(var(--H, 300px) / -2); width: var(--d, 210px); height: var(--H, 300px); transform-style: preserve-3d; will-change: transform; }
+  .geometry-probe { position: fixed !important; left: -10000px !important; top: 0 !important; visibility: hidden !important; transform: none !important; width: 1px !important; height: clamp(230px, 38vh, 330px) !important; }
+  .cv, .sp { position: absolute; top: 0; height: 100%; overflow: hidden; backface-visibility: hidden; box-shadow: 0 18px 35px rgba(37, 31, 20, .17), 0 2px 5px rgba(37, 31, 20, .14); filter: brightness(var(--shade, .55)); }
+  .cv { left: 0; width: var(--d, 210px); display: flex; align-items: flex-end; color: #fff; background-color: #5b4c3c; background-image: linear-gradient(0deg, rgba(20, 17, 14, .78), transparent 56%), url('/images/sushi-atlas.jpg'); background-size: cover, calc(100% / var(--cw)) calc(100% / var(--ch)); background-position: center, calc(var(--cx) / (1 - var(--cw)) * 100%) calc(var(--cy) / (1 - var(--ch)) * 100%); }
+  .sp { left: 0; width: var(--ws, 42px); transform: rotateY(90deg) translateZ(calc(var(--ws, 42px) / 2)); transform-origin: left center; background-color: #7b6548; background-image: linear-gradient(90deg, rgba(30, 24, 17, .45), rgba(255,255,255,.12)), url('/images/sushi-atlas.jpg'); background-size: cover, calc(100% / var(--cw)) calc(100% / var(--ch)); background-position: center, calc(var(--cx) / (1 - var(--cw)) * 100%) calc(var(--cy) / (1 - var(--ch)) * 100%); color: #fffaf0; }
   .cover-copy { display: flex; width: 100%; flex-direction: column; padding: 19px 17px; }
   .cover-category { color: #f0d8a8; font-size: 8px; }
   .cover-copy h2 { margin: 7px 0 2px; font: 500 25px/1.02 'Newsreader', serif; letter-spacing: -.02em; }
@@ -90,8 +234,6 @@ const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
     .edition { grid-column: 2; grid-row: 1; }
     .stage-wrap { min-height: 620px; }
     .shelf-section__viewport { height: 390px; perspective-origin: 50% 48%; }
-    .tape { left: -78px; top: -115px; width: 156px; height: 230px; }
-    .sp { width: 156px; }
     .cover-copy { padding: 14px 12px; }
     .cover-copy h2 { font-size: 20px; }
     .shelf { bottom: 13%; }
