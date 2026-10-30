@@ -224,6 +224,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       cursorMode = isOpen
         ? target?.closest('.detail-modal .close-btn') ? 'modal-close'
           : target?.closest('.detail-modal .cta-btn') ? 'modal-cta'
+            : target?.closest('[data-gallery-controls]') ? 'gallery-controls'
             : 'modal'
         : target?.closest('.open .cv') ? 'open'
         : target?.closest('.spine') ? 'spine'
@@ -291,6 +292,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         cursor.classList.toggle('cursor--modal', isOpen && cursorMode !== 'modal-close' && cursorMode !== 'modal-cta');
         cursor.classList.toggle('cursor--modal-close', isOpen && cursorMode === 'modal-close');
         cursor.classList.toggle('cursor--modal-cta', isOpen && cursorMode === 'modal-cta');
+        cursor.classList.toggle('cursor--gallery-controls', isOpen && cursorMode === 'gallery-controls');
       }
 
       const activeCaptionIndex = Math.floor(mod(s + 0.5, count));

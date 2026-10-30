@@ -45,9 +45,13 @@
         <rect x=".5" y=".5" width="473" height="899" fill="none" stroke="rgba(25,27,27,.14)" />
       </svg>
       <nav class="gallery-sidebar" data-gallery-controls aria-label="Fotografías del platillo">
-        <button class="gallery-arrow gallery-arrow-prev" type="button" data-gallery-prev aria-label="Fotografía anterior">‹</button>
+        <button class="gallery-arrow gallery-arrow-prev" type="button" data-gallery-prev aria-label="Fotografía anterior">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 15 7-7 7 7" /></svg>
+        </button>
         <div class="gallery-dots" data-gallery-dots role="group" aria-label="Seleccionar fotografía"></div>
-        <button class="gallery-arrow gallery-arrow-next" type="button" data-gallery-next aria-label="Fotografía siguiente">‹</button>
+        <button class="gallery-arrow gallery-arrow-next" type="button" data-gallery-next aria-label="Fotografía siguiente">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 9 7 7 7-7" /></svg>
+        </button>
       </nav>
       <span class="art-caption" lang="ja">季節の一皿</span>
     </div>
@@ -177,8 +181,8 @@
       });
       const controlsVisible = galleryImages.length > 1;
       galleryArt.classList.toggle('has-gallery', controlsVisible);
-      previousPhotoButton.disabled = !controlsVisible || selected === 0;
-      nextPhotoButton.disabled = !controlsVisible || selected === galleryImages.length - 1;
+      previousPhotoButton.disabled = !controlsVisible;
+      nextPhotoButton.disabled = !controlsVisible;
     };
 
     const setGalleryImages = (images: string[]) => {
@@ -226,7 +230,7 @@
 
     const showGalleryImage = (index: number) => {
       if (!isOpen || galleryImages.length < 2) return;
-      const next = Math.max(0, Math.min(galleryImages.length - 1, index));
+      const next = ((index % galleryImages.length) + galleryImages.length) % galleryImages.length;
       if (next === galleryIndex && galleryReveal.style.opacity === '0') return;
       galleryIndex = next;
       setSvgImage(galleryBase, galleryImages[galleryBaseIndex]);
@@ -432,16 +436,16 @@
   .detail-art { position: relative; min-width: 0; min-height: min(82vh, 900px); display: grid; place-items: center; }
   .detail-art { touch-action: pan-y; }
   .detail-art svg { display: block; width: min(100%, 474px); height: min(82vh, 900px); overflow: visible; background: #e5dfd3; }
-  .gallery-sidebar { position: absolute; z-index: 2; top: 50%; left: max(0px, calc((100% - 474px) / 2)); display: flex; flex-direction: column; align-items: center; gap: 5px; width: 24px; padding: 7px 0; border: 1px solid rgba(255, 255, 255, .12); border-radius: 999px; background: rgba(20, 20, 20, .15); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transform: translate(-50%, -50%); opacity: .45; transition: opacity 240ms ease; }
+  .gallery-sidebar { position: absolute; z-index: 2; top: 50%; left: max(0px, calc((100% - 474px) / 2)); display: flex; flex-direction: column; align-items: center; gap: 5px; width: 20px; padding: 10px 0; border: 1px solid rgba(255, 255, 255, .15); border-radius: 999px; background: rgba(20, 20, 20, .18); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transform: translate(-50%, -50%); opacity: .45; transition: opacity 240ms ease; }
   .detail-art.has-gallery:hover .gallery-sidebar, .detail-art.has-gallery:focus-within .gallery-sidebar { opacity: .9; }
-  .gallery-arrow { width: 22px; height: 27px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: transparent; color: rgba(255, 255, 255, .82); cursor: pointer; font: 300 18px/1 'Inter Tight', sans-serif; transition: color 180ms ease, opacity 180ms ease; }
-  .gallery-arrow-prev { transform: rotate(90deg); }
-  .gallery-arrow-next { transform: rotate(-90deg); }
-  .gallery-arrow:hover:not(:disabled) { color: #fff; }
+  .gallery-arrow { width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: transparent; color: rgba(255, 255, 255, .6); cursor: pointer; opacity: .6; transition: color 180ms ease, opacity 180ms ease; }
+  .gallery-arrow svg { display: block; width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+  .gallery-arrow:hover:not(:disabled), .gallery-sidebar:focus-within .gallery-arrow:not(:disabled) { color: #fff; opacity: .9; }
   .gallery-arrow:disabled { opacity: .28; cursor: default; }
   .gallery-dots { display: flex; flex-direction: column; align-items: center; gap: 7px; }
-  .gallery-dot { width: 3px; height: 3px; padding: 0; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .48); cursor: pointer; transition: width 200ms ease, height 200ms ease, background-color 200ms ease; }
-  .gallery-dot.is-active { width: 3px; height: 9px; background: rgba(255, 255, 255, .96); }
+  .gallery-dot { width: 24px; height: 18px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; }
+  .gallery-dot::before { content: ''; width: 2px; height: 4px; border-radius: 99px; background: rgba(255, 255, 255, .55); transition: height 200ms ease, background-color 200ms ease; }
+  .gallery-dot.is-active::before { height: 12px; background: #fff; }
   .gallery-arrow:focus-visible, .gallery-dot:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .art-caption { position: absolute; right: 14px; bottom: 12px; color: rgba(25, 27, 27, .62); font: 11px 'Noto Sans JP', sans-serif; writing-mode: vertical-rl; }
   @media (pointer: coarse) { .detail-art.has-gallery .gallery-sidebar { opacity: .7; } }
@@ -450,10 +454,10 @@
     .detail-inner { min-height: 100svh; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 22px; padding: 84px 20px 40px; }
     .detail-art { grid-row: 1; grid-column: 1; min-height: 42svh; height: 42svh; }
     .detail-art svg { width: min(100%, 474px); height: 42svh; }
-    .gallery-sidebar { left: 3px; width: 28px; gap: 6px; padding: 8px 0; transform: translateY(-50%); }
-    .gallery-arrow { width: 44px; height: 44px; font-size: 23px; }
-    .gallery-dot { width: 5px; height: 5px; }
-    .gallery-dot.is-active { width: 5px; height: 10px; }
+    .gallery-sidebar { left: 3px; width: 20px; gap: 6px; padding: 10px 0; transform: translateY(-50%); }
+    .gallery-arrow { width: 44px; height: 44px; }
+    .gallery-arrow svg { width: 12px; height: 12px; }
+    .gallery-dot { width: 28px; height: 24px; }
     .detail-copy { grid-row: 2; grid-column: 1; justify-content: flex-start; }
     .detail-close { position: fixed; z-index: 70; top: 10px; left: 12px; min-height: 44px; margin: 0; padding: 0 12px; border: 1px solid rgba(25, 27, 27, .14); border-radius: 999px; background: rgba(244, 242, 237, .94); box-shadow: 0 4px 16px rgba(25, 27, 27, .06); }
     #detail-title { font-size: 44px; }
