@@ -367,6 +367,7 @@
       window.dispatchEvent(new CustomEvent('takumi:detail-state', { detail: { isOpen } }));
       modal.setAttribute('aria-hidden', 'false'); modal.style.visibility = 'visible'; modal.style.pointerEvents = 'auto';
       syncCtaPlacement();
+      orderButton.classList.add('is-visible');
       ctaObserver.unobserve(ctaAnchor); ctaObserver.observe(ctaAnchor);
       modal.style.clipPath = 'inset(0 round 8px)'; modal.style.transform = 'rotate(-4.5deg)'; modal.style.transformOrigin = 'center center';
       setActiveBounds(payload.origin); inner.style.opacity = '0';
@@ -404,6 +405,7 @@
       if (sequence !== transition) return;
       animation.cancel(); modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true');
       modal.style.visibility = 'hidden'; modal.style.pointerEvents = 'none';
+      orderButton.classList.remove('is-visible');
       syncCtaPlacement();
       ['inset','left','top','right','bottom','width','height','transform','clip-path'].forEach((property) => modal.style.removeProperty(property));
       inner.style.opacity = '0'; document.body.classList.remove('detail-open'); document.body.style.overflow = previousOverflow;
@@ -628,7 +630,7 @@
     .sake-copy p { max-width: none; }
     .floating-cta { right: 20px !important; bottom: max(20px, env(safe-area-inset-bottom)) !important; left: auto !important; z-index: 120 !important; width: 56px; height: 56px; min-height: 56px; }
     .floating-cta.is-expanded { right: 20px !important; left: auto !important; width: calc(100vw - 40px) !important; height: 52px !important; min-height: 52px; }
-    :global(body.detail-open) .floating-cta { display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; z-index: 120 !important; }
+    :global(body.detail-open #detail-order-cta), .floating-cta.is-visible { display: flex !important; position: fixed !important; right: 20px !important; bottom: max(20px, env(safe-area-inset-bottom)) !important; left: auto !important; z-index: 120 !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
     .art-caption { right: 10px; bottom: 10px; color: rgba(25, 27, 27, .72); }
   }
   @media (min-width: 1024px) {
