@@ -1,3 +1,8 @@
 node_modules/
 .astro/
 dist/
+
+/nolimits4web-swiper-e043db5/*
+!/nolimits4web-swiper-e043db5/LICENSE
+!/nolimits4web-swiper-e043db5/src/
+!/nolimits4web-swiper-e043db5/src/**
