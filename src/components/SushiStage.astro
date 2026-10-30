@@ -36,11 +36,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     <div class="shelf-section__viewport">
       <div class="stage">
         {tapes.map(({ item, index }) => (
-          <article class="tape" data-index={index} data-id={item.id} data-category={item.category} data-title={item.title} data-title-es={item.titleEs} data-romaji={item.romaji} data-kanji={item.kanji} data-price={item.price} data-image={item.imageUrl} data-synopsis={item.synopsis} data-ingredients={item.ingredients.join(' · ')} data-allergens={item.allergens.join('|')} data-sake-pairing={item.sakePairing} tabindex={index === 0 ? 0 : -1} role="button" style={`--i:${index};--turn:${Math.floor(index / sushiData.length)};`} aria-label={`${item.title}, $${item.price} MXN`}>
-            <div class="sp spine" style={faceStyle(item.spineCrop, item.imageUrl)} aria-hidden="true">
+          <article class="tape" data-index={index} data-id={item.id} data-category={item.category} data-title={item.title} data-title-es={item.titleEs} data-romaji={item.romaji} data-kanji={item.kanji} data-price={item.price} data-image={item.images[0]} data-images={JSON.stringify(item.images)} data-synopsis={item.synopsis} data-ingredients={item.ingredients.join(' · ')} data-allergens={item.allergens.join('|')} data-sake-pairing={item.sakePairing} tabindex={index === 0 ? 0 : -1} role="button" style={`--i:${index};--turn:${Math.floor(index / sushiData.length)};`} aria-label={`${item.title}, $${item.price} MXN`}>
+            <div class="sp spine" style={faceStyle(item.spineCrop, item.images[0])} aria-hidden="true">
               <span class="sp-title">{item.title}</span><span class="sp-kanji" lang="ja">{item.kanji}</span>
             </div>
-            <div class="cv" data-cover style={faceStyle(item.coverCrop, item.imageUrl)}>
+            <div class="cv" data-cover style={faceStyle(item.coverCrop, item.images[0])}>
               <div class="cover-copy">
                 <span class="cover-category">{categoryNames[item.category]}</span>
                 <h2>{item.title}</h2>
@@ -95,7 +95,10 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // Warm every dish photo before it becomes the active cover.
-    const imageUrls = new Set(cards.map((card) => card.dataset.image).filter((url): url is string => Boolean(url)));
+    const imageUrls = new Set(cards.flatMap((card) => {
+      try { return JSON.parse(card.dataset.images ?? '[]') as string[]; }
+      catch { return card.dataset.image ? [card.dataset.image] : []; }
+    }));
     imageUrls.forEach((url) => {
       const image = new Image();
       image.decoding = 'async';
@@ -159,7 +162,10 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
             kanji: card.dataset.kanji ?? '',
             category: card.dataset.category ?? '',
             price: card.dataset.price ?? '',
-            imageUrl: card.dataset.image ?? '',
+            images: (() => {
+              try { return JSON.parse(card.dataset.images ?? '[]') as string[]; }
+              catch { return card.dataset.image ? [card.dataset.image] : []; }
+            })(),
             synopsis: card.dataset.synopsis ?? '',
             ingredients: card.dataset.ingredients ?? '',
             allergens: card.dataset.allergens ?? '',
@@ -218,7 +224,16 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       cursorMode = isOpen
         ? target?.closest('.detail-modal .close-btn') ? 'modal-close'
           : target?.closest('.detail-modal .cta-btn') ? 'modal-cta'
-            : target?.closest('.detail-modal') ? 'modal' : 'modal'
+            : target?.closest('[data-gallery-prev]') ? 'gallery-prev'
+              : target?.closest('[data-gallery-next]') ? 'gallery-next'
+                : (() => {
+                  const art = target?.closest<HTMLElement>('.detail-art');
+                  if (!art) return 'modal';
+                  const bounds = art.getBoundingClientRect();
+                  const edge = Math.min(100, bounds.width * 0.28);
+                  return event.clientX < bounds.left + edge ? 'gallery-prev'
+                    : event.clientX > bounds.right - edge ? 'gallery-next' : 'modal';
+                })()
         : target?.closest('.open .cv') ? 'open'
         : target?.closest('.spine') ? 'spine'
         : target?.closest('.btn') ? 'button'
@@ -262,7 +277,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       const cursorEase = prefersReducedMotion ? 1 : 1 - Math.exp(-16 * dt);
       cursorX += (pointerX - cursorX) * cursorEase;
       cursorY += (pointerY - cursorY) * cursorEase;
-      const targetCursorScale = cursorMode === 'open' ? 1.75 : cursorMode === 'spine' ? 0.72 : cursorMode === 'button' ? 0.55 : cursorMode === 'modal-close' ? 1.14 : cursorMode === 'modal-cta' ? 1.18 : 1;
+      const targetCursorScale = cursorMode === 'open' ? 1.75 : cursorMode === 'spine' ? 0.72 : cursorMode === 'button' ? 0.55 : cursorMode === 'modal-close' ? 1.14 : cursorMode === 'modal-cta' ? 1.18 : cursorMode === 'gallery-prev' || cursorMode === 'gallery-next' ? 1.08 : 1;
       if (cursorReturnStart) {
         const progress = Math.min(1, (now - cursorReturnStart) / 300);
         const eased = 1 - Math.pow(1 - progress, 3);
@@ -284,6 +299,8 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         cursor.classList.toggle('cursor--modal', isOpen && cursorMode !== 'modal-close' && cursorMode !== 'modal-cta');
         cursor.classList.toggle('cursor--modal-close', isOpen && cursorMode === 'modal-close');
         cursor.classList.toggle('cursor--modal-cta', isOpen && cursorMode === 'modal-cta');
+        cursor.classList.toggle('cursor--gallery-prev', isOpen && cursorMode === 'gallery-prev');
+        cursor.classList.toggle('cursor--gallery-next', isOpen && cursorMode === 'gallery-next');
       }
 
       const activeCaptionIndex = Math.floor(mod(s + 0.5, count));

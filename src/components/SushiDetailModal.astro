@@ -40,9 +40,15 @@
             </g>
           </mask>
         </defs>
-        <image data-detail-image href="" x="0" y="0" width="474" height="900" preserveAspectRatio="xMidYMid slice" mask="url(#ink-mask)" />
+        <image data-gallery-base href="" x="0" y="0" width="474" height="900" preserveAspectRatio="xMidYMid slice" opacity="0" />
+        <image data-gallery-reveal href="" x="0" y="0" width="474" height="900" preserveAspectRatio="xMidYMid slice" mask="url(#ink-mask)" />
         <rect x=".5" y=".5" width="473" height="899" fill="none" stroke="rgba(25,27,27,.14)" />
       </svg>
+      <nav class="gallery-controls" data-gallery-controls aria-label="Fotografías del platillo">
+        <button class="gallery-arrow gallery-arrow-prev" type="button" data-gallery-prev aria-label="Fotografía anterior">‹</button>
+        <div class="gallery-dots" data-gallery-dots role="group" aria-label="Seleccionar fotografía"></div>
+        <button class="gallery-arrow gallery-arrow-next" type="button" data-gallery-next aria-label="Fotografía siguiente">›</button>
+      </nav>
       <span class="art-caption" lang="ja">季節の一皿</span>
     </div>
   </div>
@@ -57,7 +63,7 @@
     kanji: string;
     category: string;
     price: string;
-    imageUrl: string;
+    images: string[];
     synopsis: string;
     ingredients: string;
     allergens: string;
@@ -71,14 +77,19 @@
   const closeButton = modal?.querySelector<HTMLButtonElement>('[data-close]');
   const orderButton = modal?.querySelector<HTMLButtonElement>('[data-order]');
   const orderLabel = modal?.querySelector<HTMLElement>('[data-order-label]');
-  const photo = modal?.querySelector<SVGImageElement>('[data-detail-image]');
+  const galleryBase = modal?.querySelector<SVGImageElement>('[data-gallery-base]');
+  const galleryReveal = modal?.querySelector<SVGImageElement>('[data-gallery-reveal]');
+  const galleryArt = modal?.querySelector<HTMLElement>('.detail-art');
+  const galleryDots = modal?.querySelector<HTMLElement>('[data-gallery-dots]');
+  const previousPhotoButton = modal?.querySelector<HTMLButtonElement>('[data-gallery-prev]');
+  const nextPhotoButton = modal?.querySelector<HTMLButtonElement>('[data-gallery-next]');
   const inkDots = Array.from(modal?.querySelectorAll<SVGCircleElement>('[data-ink-dot]') ?? []);
   const lineMasks = Array.from(modal?.querySelectorAll<HTMLElement>('[data-detail-line]') ?? []);
   const categoryNames: Record<string, string> = {
     nigiri: 'Nigiri', maki: 'Maki', sashimi: 'Sashimi', specials: 'Especiales',
   };
 
-  if (modal && inner && closeButton && orderButton && photo) {
+  if (modal && inner && closeButton && orderButton && galleryBase && galleryReveal && galleryArt && galleryDots && previousPhotoButton && nextPhotoButton) {
     let isOpen = false;
     let activeDish: DishDetail | null = null;
     let origin: DetailOrigin | null = null;
@@ -87,6 +98,16 @@
     let inkFrame = 0;
     let transition = 0;
     let previousOverflow = '';
+    let galleryImages: string[] = [];
+    let galleryIndex = 0;
+    let galleryBaseIndex = 0;
+    let galleryRequest = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchLastX = 0;
+    let touchLastTime = 0;
+    let touchVelocity = 0;
+    let touchIsHorizontal = false;
     const textAnimations: Animation[] = [];
 
     const setField = (field: string, value: string) => {
@@ -110,6 +131,7 @@
 
     const cancelDetailEffects = () => {
       cancelAnimationFrame(inkFrame);
+      galleryRequest++;
       openingAnimation?.cancel();
       openingAnimation = null;
       textAnimations.splice(0).forEach((animation) => animation.cancel());
@@ -137,24 +159,83 @@
       });
     };
 
-    const revealInk = () => {
+    const setSvgImage = (image: SVGImageElement, url: string) => {
+      image.setAttribute('href', url);
+      image.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
+    };
+
+    const renderGalleryDots = (selected: number) => {
+      galleryDots.replaceChildren();
+      galleryImages.forEach((_, index) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = `gallery-dot${index === selected ? ' is-active' : ''}`;
+        dot.setAttribute('aria-label', `Ver fotografía ${index + 1} de ${galleryImages.length}`);
+        dot.setAttribute('aria-pressed', String(index === selected));
+        dot.addEventListener('click', () => showGalleryImage(index));
+        galleryDots.append(dot);
+      });
+      const controlsVisible = galleryImages.length > 1;
+      galleryArt.classList.toggle('has-gallery', controlsVisible);
+      previousPhotoButton.disabled = !controlsVisible || selected === 0;
+      nextPhotoButton.disabled = !controlsVisible || selected === galleryImages.length - 1;
+    };
+
+    const setGalleryImages = (images: string[]) => {
+      galleryImages = images.filter(Boolean);
+      if (!galleryImages.length) galleryImages = [''];
+      galleryIndex = 0;
+      galleryBaseIndex = 0;
+      setSvgImage(galleryBase, galleryImages[0]);
+      setSvgImage(galleryReveal, galleryImages[0]);
+      galleryBase.style.opacity = '0';
+      galleryReveal.style.opacity = '1';
+      renderGalleryDots(0);
+    };
+
+    const revealInk = (onComplete: () => void, duration = 650, stagger = 65) => {
       cancelAnimationFrame(inkFrame);
+      const request = ++galleryRequest;
       inkDots.forEach((circle) => circle.setAttribute('r', '0'));
       const startedAt = performance.now();
-      const delay = 65;
-      const duration = 650;
       const draw = (now: number) => {
-        if (!modal.classList.contains('is-open')) return;
+        if (!modal.classList.contains('is-open') || request !== galleryRequest) return;
         let finished = true;
         inkDots.forEach((circle, index) => {
-          const progress = Math.max(0, Math.min(1, (now - startedAt - index * delay) / duration));
+          const progress = Math.max(0, Math.min(1, (now - startedAt - index * stagger) / duration));
           const eased = 1 - Math.pow(1 - progress, 3);
           circle.setAttribute('r', String(720 * eased));
           if (progress < 1) finished = false;
         });
         if (!finished) inkFrame = requestAnimationFrame(draw);
+        else {
+          inkFrame = 0;
+          onComplete();
+        }
       };
       inkFrame = requestAnimationFrame(draw);
+    };
+
+    const finishGalleryReveal = (index: number) => {
+      galleryBaseIndex = index;
+      setSvgImage(galleryBase, galleryImages[index]);
+      galleryBase.style.opacity = '1';
+      galleryReveal.style.opacity = '0';
+      inkDots.forEach((circle) => circle.setAttribute('r', '0'));
+    };
+
+    const showGalleryImage = (index: number) => {
+      if (!isOpen || galleryImages.length < 2) return;
+      const next = Math.max(0, Math.min(galleryImages.length - 1, index));
+      if (next === galleryIndex && galleryReveal.style.opacity === '0') return;
+      galleryIndex = next;
+      setSvgImage(galleryBase, galleryImages[galleryBaseIndex]);
+      galleryBase.style.opacity = '1';
+      setSvgImage(galleryReveal, galleryImages[next]);
+      galleryReveal.style.opacity = '1';
+      renderGalleryDots(next);
+      // Short, staggered ink pulse reveals every new photo through the paper texture.
+      revealInk(() => finishGalleryReveal(next), 420, 28);
     };
 
     const openDetail = async (payload: OpenDetailPayload) => {
@@ -171,9 +252,7 @@
       setField('ingredients', payload.dish.ingredients);
       setField('sake', payload.dish.sakePairing);
       setBadges(payload.dish);
-      photo.setAttribute('href', payload.dish.imageUrl);
-      photo.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', payload.dish.imageUrl);
-      photo.setAttribute('aria-label', `Fotografía: ${payload.dish.titleEs}`);
+      setGalleryImages(payload.dish.images);
       const svgTitle = modal.querySelector<SVGTitleElement>('#detail-image-title');
       if (svgTitle) svgTitle.textContent = `Fotografía de ${payload.dish.titleEs}`;
       if (orderLabel) orderLabel.textContent = 'AÑADIR AL PEDIDO / 注文する';
@@ -193,7 +272,7 @@
       setBounds(payload.origin);
       inner.style.opacity = '0';
 
-      revealInk();
+      revealInk(() => finishGalleryReveal(0));
       revealText();
       openingAnimation = modal.animate([
         { left: `${payload.origin.left}px`, top: `${payload.origin.top}px`, width: `${payload.origin.width}px`, height: `${payload.origin.height}px`, transform: 'rotate(-4.5deg)', clipPath: 'inset(0 round 8px)' },
@@ -223,6 +302,8 @@
       if (!modal.classList.contains('is-open') || !origin) return;
       const sequence = ++transition;
       isOpen = false;
+      galleryRequest++;
+      cancelAnimationFrame(inkFrame);
       window.dispatchEvent(new CustomEvent('takumi:detail-state', { detail: { isOpen } }));
       const currentRect = modal.getBoundingClientRect();
       const currentTransform = getComputedStyle(modal).transform;
@@ -256,6 +337,8 @@
       modal.style.removeProperty('height');
       modal.style.removeProperty('transform');
       modal.style.removeProperty('clip-path');
+      galleryBase.style.opacity = '0';
+      galleryReveal.style.opacity = '1';
       inner.style.opacity = '0';
       document.body.classList.remove('detail-open');
       document.body.style.overflow = previousOverflow;
@@ -267,6 +350,42 @@
     };
 
     closeButton.addEventListener('click', () => void closeDetail());
+    previousPhotoButton.addEventListener('click', () => showGalleryImage(galleryIndex - 1));
+    nextPhotoButton.addEventListener('click', () => showGalleryImage(galleryIndex + 1));
+    galleryArt.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      touchStartX = touch.clientX;
+      touchLastX = touch.clientX;
+      touchStartY = touch.clientY;
+      touchLastTime = performance.now();
+      touchVelocity = 0;
+      touchIsHorizontal = false;
+    }, { passive: true });
+    galleryArt.addEventListener('touchmove', (event) => {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+      if (!touchIsHorizontal && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.15) touchIsHorizontal = true;
+      if (!touchIsHorizontal) return;
+      event.preventDefault();
+      const now = performance.now();
+      const sampleTime = Math.max((now - touchLastTime) / 1000, 1 / 240);
+      touchVelocity = (touch.clientX - touchLastX) / sampleTime;
+      touchLastX = touch.clientX;
+      touchLastTime = now;
+    }, { passive: false });
+    galleryArt.addEventListener('touchend', (event) => {
+      if (!touchIsHorizontal) return;
+      const touch = event.changedTouches[0];
+      const total = touch.clientX - touchStartX;
+      if (Math.abs(total) > 36) {
+        const momentumSteps = Math.abs(touchVelocity) > 1250 ? 2 : 1;
+        showGalleryImage(galleryIndex + (total < 0 ? momentumSteps : -momentumSteps));
+      }
+      touchIsHorizontal = false;
+    }, { passive: true });
     modal.addEventListener('click', (event) => {
       if (event.target === modal) void closeDetail();
     });
@@ -311,13 +430,28 @@
   .detail-order b { font: 400 16px 'Inter Tight', sans-serif; }
   .detail-close:focus-visible, .detail-order:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 4px; }
   .detail-art { position: relative; min-width: 0; min-height: min(82vh, 900px); display: grid; place-items: center; }
+  .detail-art { touch-action: pan-y; }
   .detail-art svg { display: block; width: min(100%, 474px); height: min(82vh, 900px); overflow: visible; background: #e5dfd3; }
+  .gallery-controls { position: absolute; z-index: 2; left: 50%; bottom: 22px; display: flex; align-items: center; gap: 13px; padding: 6px 8px; border: 1px solid rgba(247, 244, 239, .52); border-radius: 999px; background: rgba(25, 27, 27, .28); backdrop-filter: blur(12px); transform: translateX(-50%); opacity: 0; transition: opacity 220ms ease; }
+  .detail-art.has-gallery:hover .gallery-controls, .detail-art.has-gallery:focus-within .gallery-controls { opacity: 1; }
+  .gallery-arrow { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(247, 244, 239, .55); border-radius: 50%; background: rgba(247, 244, 239, .12); color: #fff; cursor: pointer; font: 300 23px/1 'Inter Tight', sans-serif; transition: background-color 180ms ease, opacity 180ms ease, transform 180ms ease; }
+  .gallery-arrow:hover:not(:disabled) { background: rgba(247, 244, 239, .28); transform: scale(1.06); }
+  .gallery-arrow:disabled { opacity: .32; cursor: default; }
+  .gallery-dots { display: flex; align-items: center; gap: 7px; }
+  .gallery-dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .55); cursor: pointer; transition: width 200ms ease, border-radius 200ms ease, background-color 200ms ease; }
+  .gallery-dot.is-active { width: 19px; border-radius: 99px; background: #fff; }
+  .gallery-arrow:focus-visible, .gallery-dot:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
   .art-caption { position: absolute; right: 14px; bottom: 12px; color: rgba(25, 27, 27, .62); font: 11px 'Noto Sans JP', sans-serif; writing-mode: vertical-rl; }
+  @media (pointer: coarse) { .detail-art.has-gallery .gallery-controls { opacity: 1; } }
   @media (max-width: 767px) {
     .detail-modal { position: fixed; inset: 0; height: 100vh; height: 100dvh; min-height: 100svh; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
     .detail-inner { min-height: 100svh; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 22px; padding: 84px 20px 40px; }
     .detail-art { grid-row: 1; grid-column: 1; min-height: 42svh; height: 42svh; }
     .detail-art svg { width: min(100%, 474px); height: 42svh; }
+    .gallery-controls { bottom: 14px; gap: 10px; padding: 5px 7px; }
+    .gallery-arrow { width: 44px; height: 44px; font-size: 25px; }
+    .gallery-dot { min-width: 9px; min-height: 9px; }
+    .gallery-dot.is-active { width: 21px; }
     .detail-copy { grid-row: 2; grid-column: 1; justify-content: flex-start; }
     .detail-close { position: fixed; z-index: 70; top: 10px; left: 12px; min-height: 44px; margin: 0; padding: 0 12px; border: 1px solid rgba(25, 27, 27, .14); border-radius: 999px; background: rgba(244, 242, 237, .94); box-shadow: 0 4px 16px rgba(25, 27, 27, .06); }
     #detail-title { font-size: 44px; }

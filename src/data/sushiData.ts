@@ -10,7 +10,7 @@ export interface SushiItem {
   price: number;
   ingredients: string[];
   synopsis: string;
-  imageUrl: string;
+  images: string[];
   allergens: string[];
   sakePairing: string;
   /** Optional normalized crop coordinates kept for a future sprite-sheet variant. */
@@ -18,10 +18,27 @@ export interface SushiItem {
   coverCrop: { x: number; y: number; w: number; h: number };
 }
 
+const photo = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&fm=webp&q=85&w=1600`;
+
+const galleries = {
+  dragonRoll: [photo('photo-1761314026068-f07ec1ce6e2b'), photo('photo-1749321834585-bda3df817655'), photo('photo-1637074930269-089fde202b57')],
+  otoroNigiri: [photo('photo-1691442574552-6059a11c0e25'), photo('photo-1772285268647-11deb0bdbe29'), photo('photo-1747471447806-c56d99c348cd')],
+  unagiFoieGras: [photo('photo-1763647756796-af9230245bf8'), photo('photo-1754211152988-c0622613211e'), photo('photo-1747471447806-c56d99c348cd')],
+  aburiSalmon: [photo('photo-1744360515510-db7bf0f6def8'), photo('photo-1747471447806-c56d99c348cd'), photo('photo-1637074930269-089fde202b57')],
+  spicyTunaRoll: [photo('photo-1713453018516-b08018818c0c'), photo('photo-1749321834585-bda3df817655'), photo('photo-1761314026068-f07ec1ce6e2b')],
+  yellowtailSashimi: [photo('photo-1772285283419-b34f42b4a4df'), photo('photo-1754211152988-c0622613211e'), photo('photo-1772285268647-11deb0bdbe29')],
+  tempuraKingPrawn: [photo('photo-1666599207746-0868c6a556d2'), photo('photo-1772285283419-b34f42b4a4df'), photo('photo-1754211152988-c0622613211e')],
+  seaUrchinGunkan: [photo('photo-1747471447806-c56d99c348cd'), photo('photo-1754211152988-c0622613211e'), photo('photo-1637074930269-089fde202b57')],
+  a5WagyuNigiri: [photo('photo-1691442574552-6059a11c0e25'), photo('photo-1772285268647-11deb0bdbe29'), photo('photo-1747471447806-c56d99c348cd')],
+  softShellCrab: [photo('photo-1713453018516-b08018818c0c'), photo('photo-1749321834585-bda3df817655'), photo('photo-1637074930269-089fde202b57')],
+  scallopSashimi: [photo('photo-1772285283419-b34f42b4a4df'), photo('photo-1754211152988-c0622613211e'), photo('photo-1772285268647-11deb0bdbe29')],
+  ceremonialMatcha: [photo('photo-1755685068178-4b57210ddcd4'), photo('photo-1753009712810-3f72c3f72548'), photo('photo-1515823064-d6e0c04616a7')],
+};
+
 export const sushiData: SushiItem[] = [
   {
     id: 'dragon-roll', title: 'Dragon Roll', titleEs: 'Rollo dragón', romaji: 'Doragon Maki', kanji: '龍巻', category: 'maki', price: 245,
-    imageUrl: 'https://images.unsplash.com/photo-1761314026068-f07ec1ce6e2b?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.dragonRoll,
     ingredients: ['Camarón tempura', 'aguacate', 'pepino', 'anguila', 'salsa unagi', 'ajonjolí'],
     allergens: ['Crustáceos', 'Pescado', 'Soya', 'Sésamo', 'Gluten'],
     sakePairing: 'Junmai ginjo frío · notas de pera y arroz que equilibran el glaseado de anguila.',
@@ -30,7 +47,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'otoro-nigiri', title: 'Otoro Nigiri', titleEs: 'Nigiri de otoro', romaji: 'Ōtoro Nigiri', kanji: '大とろ握り', category: 'nigiri', price: 185,
-    imageUrl: 'https://images.unsplash.com/photo-1691442574552-6059a11c0e25?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.otoroNigiri,
     ingredients: ['Ventresca de atún graso', 'arroz de sushi', 'wasabi'],
     allergens: ['Pescado'],
     sakePairing: 'Junmai daiginjo · textura sedosa y final limpio para la grasa del otoro.',
@@ -39,7 +56,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'unagi-foie-gras', title: 'Unagi Foie Gras', titleEs: 'Anguila y foie gras', romaji: 'Unagi to Foie Gras', kanji: '鰻とフォアグラ', category: 'specials', price: 295,
-    imageUrl: 'https://images.unsplash.com/photo-1763647756796-af9230245bf8?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.unagiFoieGras,
     ingredients: ['Anguila de agua dulce', 'foie gras', 'arroz de sushi', 'salsa kabayaki', 'cebollín'],
     allergens: ['Pescado', 'Soya', 'Gluten'],
     sakePairing: 'Junmai yamahai · su estructura y umami acompañan la anguila y el foie gras.',
@@ -48,7 +65,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'aburi-salmon', title: 'Aburi Salmon', titleEs: 'Salmón aburi', romaji: 'Aburi Sāmon', kanji: '炙りサーモン', category: 'nigiri', price: 145,
-    imageUrl: 'https://images.unsplash.com/photo-1744360515510-db7bf0f6def8?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.aburiSalmon,
     ingredients: ['Salmón', 'arroz de sushi', 'ponzu de yuzu', 'sal de mar'],
     allergens: ['Pescado', 'Soya', 'Gluten'],
     sakePairing: 'Junmai ginjo · acidez fresca que recoge el yuzu y el tostado del salmón.',
@@ -57,7 +74,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'spicy-tuna-roll', title: 'Spicy Tuna Roll', titleEs: 'Rollo de atún picante', romaji: 'Supaisī Tsuna Maki', kanji: '辛味鮪巻', category: 'maki', price: 210,
-    imageUrl: 'https://images.unsplash.com/photo-1713453018516-b08018818c0c?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.spicyTunaRoll,
     ingredients: ['Atún', 'mayonesa japonesa', 'togarashi', 'pepino', 'nori', 'cebollín'],
     allergens: ['Pescado', 'Huevo', 'Soya', 'Gluten'],
     sakePairing: 'Honjozo ligeramente frío · seco y ligero para acompañar el chile y la mayonesa.',
@@ -66,7 +83,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'yellowtail-sashimi', title: 'Yellowtail Sashimi', titleEs: 'Sashimi de hamachi', romaji: 'Hamachi Sashimi', kanji: '鰤刺身', category: 'sashimi', price: 230,
-    imageUrl: 'https://images.unsplash.com/photo-1744360515510-db7bf0f6def8?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.yellowtailSashimi,
     ingredients: ['Hamachi (jurel japonés)', 'daikon', 'ponzu', 'cebollín'],
     allergens: ['Pescado', 'Soya', 'Gluten'],
     sakePairing: 'Junmai ginjo · notas cítricas y minerales para la textura firme del hamachi.',
@@ -75,7 +92,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'tempura-king-prawn', title: 'Tempura King Prawn', titleEs: 'Camarón jumbo en tempura', romaji: 'Ebi Tempura', kanji: '海老天ぷら', category: 'specials', price: 225,
-    imageUrl: 'https://images.unsplash.com/photo-1744360515510-db7bf0f6def8?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.tempuraKingPrawn,
     ingredients: ['Camarón jumbo', 'harina de tempura', 'daikon', 'salsa tentsuyu'],
     allergens: ['Crustáceos', 'Gluten', 'Soya'],
     sakePairing: 'Junmai karakuchi · seco, con cuerpo suficiente para la fritura ligera.',
@@ -84,7 +101,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'sea-urchin-gunkan', title: 'Sea Urchin Gunkan', titleEs: 'Gunkan de erizo', romaji: 'Uni Gunkan', kanji: '雲丹軍艦', category: 'nigiri', price: 260,
-    imageUrl: 'https://images.unsplash.com/photo-1763647756796-af9230245bf8?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.seaUrchinGunkan,
     ingredients: ['Uni (erizo de mar)', 'arroz de sushi', 'nori'],
     allergens: ['Mariscos', 'Pescado'],
     sakePairing: 'Junmai daiginjo · delicado y floral para preservar el dulzor marino del uni.',
@@ -93,7 +110,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'a5-wagyu-nigiri', title: 'A5 Wagyu Nigiri', titleEs: 'Nigiri de wagyu A5', romaji: 'Wagyū A5 Nigiri', kanji: '和牛A5握り', category: 'specials', price: 320,
-    imageUrl: 'https://images.unsplash.com/photo-1691442574552-6059a11c0e25?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.a5WagyuNigiri,
     ingredients: ['Wagyu japonés A5', 'arroz de sushi', 'sal de Maldon', 'wasabi'],
     allergens: [],
     sakePairing: 'Junmai kimoto · umami profundo que armoniza con el marmoleo del wagyu.',
@@ -102,7 +119,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'soft-shell-crab', title: 'Soft Shell Crab', titleEs: 'Cangrejo de caparazón blando', romaji: 'Sōto Sheru Kurabu Maki', kanji: 'ソフトシェルクラブ巻', category: 'maki', price: 255,
-    imageUrl: 'https://images.unsplash.com/photo-1713453018516-b08018818c0c?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.softShellCrab,
     ingredients: ['Cangrejo de caparazón blando', 'lechuga', 'aguacate', 'masago', 'mayonesa japonesa'],
     allergens: ['Crustáceos', 'Pescado', 'Huevo', 'Soya', 'Gluten'],
     sakePairing: 'Junmai ginjo frío · limpia el paladar entre el crujiente y la cremosidad.',
@@ -111,7 +128,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'scallop-sashimi', title: 'Scallop Sashimi', titleEs: 'Sashimi de callo de hacha', romaji: 'Hotate Sashimi', kanji: '帆立刺身', category: 'sashimi', price: 215,
-    imageUrl: 'https://images.unsplash.com/photo-1744360515510-db7bf0f6def8?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.scallopSashimi,
     ingredients: ['Callo de hacha', 'limón', 'sal de mar', 'shiso'],
     allergens: ['Moluscos'],
     sakePairing: 'Junmai daiginjo · aroma floral y final nítido junto al dulzor del callo.',
@@ -120,7 +137,7 @@ export const sushiData: SushiItem[] = [
   },
   {
     id: 'ceremonial-matcha', title: 'Ceremonial Matcha', titleEs: 'Matcha ceremonial', romaji: 'Matcha', kanji: '抹茶', category: 'specials', price: 120,
-    imageUrl: 'https://images.unsplash.com/photo-1755685068178-4b57210ddcd4?auto=format&fit=crop&fm=webp&q=85&w=1200',
+    images: galleries.ceremonialMatcha,
     ingredients: ['Té verde matcha ceremonial', 'agua a 80 °C'],
     allergens: [],
     sakePairing: 'Sin sake · acompáñalo con agua mineral para apreciar el umami y el amargor del té.',
