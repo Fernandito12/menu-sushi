@@ -256,15 +256,7 @@
       swiper.slides.forEach((slide) => {
         const progress = slide.progress ?? 0;
         const distance = Math.abs(progress);
-        const card = slide.querySelector<HTMLElement>('.swiper-slide-card');
         const img = slide.querySelector<SVGImageElement>('.swiper-slide-img');
-        const scale = 1 - Math.min(distance * .12, .12);
-        const opacity = 1 - Math.min(distance * .62, .62);
-        if (card) {
-          card.style.transform = `scale(${scale})`;
-          card.style.opacity = String(opacity);
-        }
-        slide.style.zIndex = String(10 - Math.round(distance));
         if (img) img.style.transform = `scale(${1 + distance * .15}) translateY(${progress * 10}%)`;
       });
     };
@@ -284,14 +276,14 @@
       galleryDots.setAttribute('aria-label', `Elegir entre ${galleryImages.length} fotografías`);
       gallerySwiper = new Swiper(swiperElement, {
         modules: [EffectCreative, Navigation, Pagination],
-        direction: 'vertical', loop: galleryImages.length > 1, speed: 700,
+        direction: 'vertical', loop: galleryImages.length > 1, speed: 800,
         grabCursor: true, centeredSlides: true, slidesPerView: 1.25, spaceBetween: 16,
         watchSlidesProgress: true, touchRatio: 1.2, resistanceRatio: .85,
         effect: 'creative',
         creativeEffect: {
-          limitProgress: 2,
-          prev: { translate: [0, 0, -1], scale: 1, opacity: 1 },
-          next: { translate: [0, 0, -1], scale: 1, opacity: 1 },
+          limitProgress: 1,
+          prev: { translate: [0, '-85%', -100], scale: .88, opacity: .38 },
+          next: { translate: [0, '85%', -100], scale: .88, opacity: .38 },
         },
         navigation: { prevEl: previousPhotoButton, nextEl: nextPhotoButton },
         pagination: {
@@ -439,8 +431,8 @@
   .detail-close:focus-visible, .detail-order:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 4px; }
   .detail-art { --expo-ease: cubic-bezier(0.16, 1, 0.3, 1); position: relative; min-width: 0; min-height: min(82vh, 900px); display: grid; place-items: center; }
   .detail-art { touch-action: pan-x; }
-  :global(.modal-gallery-swiper) { width: min(100%, 474px); height: min(82vh, 900px); overflow: hidden; background: #e5dfd3; }
-  :global(.modal-gallery-swiper .swiper-wrapper) { align-items: center; }
+  :global(.modal-gallery-swiper) { --swiper-wrapper-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); width: min(100%, 474px); height: min(82vh, 900px); overflow: hidden; background: #e5dfd3; }
+  :global(.modal-gallery-swiper .swiper-wrapper) { align-items: center; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
   :global(.modal-gallery-swiper .swiper-slide) { height: calc((100% - 16px) / 1.25); overflow: hidden; border-radius: 16px; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d; will-change: transform, opacity; }
   :global(.swiper-slide-card) { width: 100%; height: 100%; overflow: hidden; border-radius: 16px; transform: scale(1); transform-origin: center; will-change: transform, opacity; transition-property: transform, opacity; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
   :global(.swiper-slide-img) { display: block; width: 100%; height: 100%; object-fit: cover; overflow: hidden; will-change: transform; transform-origin: center; transition-property: transform; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
