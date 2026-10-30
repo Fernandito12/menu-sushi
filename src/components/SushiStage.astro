@@ -26,6 +26,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       <span class="brand-name">TAKUMI OMAKASE</span><span class="brand-kanji" lang="ja">匠</span>
     </a>
     <nav class="categories category-nav" aria-label="Categorías del menú">
+      <span class="category-indicator" aria-hidden="true"></span>
       {categories.map((category, i) => (
         <button class:list={['category', 'btn', { active: i === 0 }]} type="button" data-category={category.value} aria-pressed={i === 0 ? 'true' : 'false'}>{category.label}</button>
       ))}
@@ -80,6 +81,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   const stage = shelf?.querySelector<HTMLElement>('.stage');
   const cards = Array.from(shelf?.querySelectorAll<HTMLElement>('.tape') ?? []);
   const tabs = Array.from(shelf?.querySelectorAll<HTMLButtonElement>('.category') ?? []);
+  const categoryNav = shelf?.querySelector<HTMLElement>('.category-nav');
 
   if (shelf && stage && cards.length) {
     const count = cards.length;
@@ -149,6 +151,28 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     let inertiaActive = false;
     let frame = 0;
     let lastWatermarkCategory = '';
+    let lastActiveCategory = '';
+    let pendingTabValue: string | null = null;
+    let pendingTargetCategory: string | null = null;
+
+    const setActiveTab = (value: string) => {
+      const activeTab = tabs.find((tab) => tab.dataset.category === value);
+      if (!activeTab) return;
+      tabs.forEach((tab) => {
+        const selected = tab === activeTab;
+        tab.classList.toggle('active', selected);
+        tab.setAttribute('aria-pressed', String(selected));
+      });
+      const indicator = categoryNav?.querySelector<HTMLElement>('.category-indicator');
+      if (indicator) {
+        indicator.style.width = `${activeTab.offsetWidth}px`;
+        indicator.style.height = `${activeTab.offsetHeight}px`;
+        indicator.style.transform = `translate3d(${activeTab.offsetLeft}px, -50%, 0)`;
+      }
+      activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    };
+
+    requestAnimationFrame(() => setActiveTab('all'));
 
     const dispatchOpenDetail = (card: HTMLElement) => {
       if (!card.classList.contains('open')) return;
@@ -298,8 +322,16 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         cursor.classList.toggle('cursor--gallery-controls', isOpen && cursorMode === 'gallery-controls');
       }
 
-      const activeCaptionIndex = Math.floor(mod(s + 0.5, count));
-      const activeCategory = cards[activeCaptionIndex]?.dataset.category ?? 'specials';
+      const activeCaptionIndex = mod(Math.round(s), count);
+      const activeCategory = sushiData[mod(Math.round(s), sushiData.length)]?.category ?? 'specials';
+      if (pendingTabValue && activeCategory === pendingTargetCategory) {
+        setActiveTab(pendingTabValue);
+        pendingTabValue = null;
+        pendingTargetCategory = null;
+      } else if (activeCategory !== lastActiveCategory && !pendingTabValue) {
+        setActiveTab(activeCategory);
+      }
+      lastActiveCategory = activeCategory;
       const watermarkCategory = ['nigiri', 'maki', 'sashimi'].includes(activeCategory) ? activeCategory : 'default';
       if (watermarkCategory !== lastWatermarkCategory) {
         watermarkCategoryLayers.forEach((layer) => layer.classList.toggle('is-active', layer.dataset.watermarkCategory === watermarkCategory));
@@ -475,13 +507,10 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         : cards.find((card) => card.dataset.category === category)?.dataset.index;
       if (first === undefined) return;
       const firstIndex = Number(first);
+      pendingTabValue = category;
+      pendingTargetCategory = cards[firstIndex]?.dataset.category ?? null;
+      setActiveTab(category);
       T += shortestDistance(mod(T, count), firstIndex);
-      tabs.forEach((candidate) => {
-        const selected = candidate === tab;
-        candidate.classList.toggle('active', selected);
-        candidate.setAttribute('aria-pressed', String(selected));
-      });
-      tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }));
 
     window.addEventListener('resize', () => {
@@ -512,11 +541,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   .brand-kanji { font: 21px 'Noto Sans JP', sans-serif; color: var(--cobalt); }
   .categories { min-width: 0; max-width: 100%; display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 8px 16px; white-space: nowrap; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scrollbar-width: none; mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); }
   .categories::-webkit-scrollbar { display: none; }
-  .category-nav { position: relative; z-index: 50; width: 100%; display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-x !important; pointer-events: auto !important; user-select: none; }
+  .category-nav { position: relative; z-index: 50; width: 100%; max-width: 100vw; display: flex !important; flex-wrap: nowrap !important; justify-content: flex-start !important; overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-x !important; pointer-events: auto !important; user-select: none; scroll-snap-type: x proximity; padding: 8px 24px !important; gap: 16px !important; }
   .category-nav > * { flex-shrink: 0 !important; }
-  .category { appearance: none; flex: 0 0 auto; flex-shrink: 0; white-space: nowrap; border: 0; padding: 8px 10px; background: transparent; cursor: pointer; font-size: 9px; color: #898780; }
-  .category.active { color: var(--cobalt); }
-  .category.active::before { content: ''; display: inline-block; width: 5px; height: 5px; margin: 0 7px 1px 0; border-radius: 50%; background: var(--cobalt); }
+  .category-indicator { position: absolute; z-index: 0; top: 50%; left: 0; display: block; width: 0; height: 0; border-radius: 999px; background: var(--cobalt); pointer-events: none; transition: width .45s var(--ease), height .45s var(--ease), transform .55s var(--ease); }
+  .category { position: relative; z-index: 1; appearance: none; flex: 0 0 auto; flex-shrink: 0; white-space: nowrap; scroll-snap-align: center; border: 0; padding: 8px 10px; background: transparent; cursor: pointer; font-size: 9px; color: #898780; transition: color .25s ease; }
+  .category.active { color: #fff; }
   .edition { justify-self: end; padding-right: 122px; white-space: nowrap; font-size: 9px; color: #77746e; }
   .stage-wrap { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 650px; padding: 35px 0 40px; perspective: 2200px; }
   .eyebrow { z-index: 1; margin: 0 0 10px; color: var(--cobalt); font-size: 9px; }
@@ -575,7 +604,6 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     .topbar { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 5vw 8px; }
     .categories { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 4px; width: 100%; margin-top: 5px; }
     .category { display: inline-flex; flex: 0 0 auto; min-width: max-content; min-height: 44px; align-items: center; justify-content: center; padding: 0 11px; font-size: 8px; }
-    .category.active::before { width: 4px; height: 4px; margin-right: 5px; }
     .edition { display: none; }
     .stage-wrap { min-height: 0; padding: 18px 0 20px; perspective: 1200px; }
     .eyebrow { margin-bottom: 7px; font-size: 8px; }

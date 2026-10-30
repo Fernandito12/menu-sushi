@@ -43,7 +43,7 @@ const galleries = {
   blackSesameIceCream: [photo('photo-1563805042-7684c019e1cb'), photo('photo-1582176604856-e824b4736522'), photo('photo-1563805042-7684c019e1cb')],
 };
 
-export const sushiData: SushiItem[] = [
+const sushiCatalog: SushiItem[] = [
   {
     id: 'dragon-roll', title: 'Dragon Roll', titleEs: 'Rollo dragón', romaji: 'Doragon Maki', kanji: '龍巻', category: 'maki', price: 245,
     images: galleries.dragonRoll,
@@ -72,7 +72,7 @@ export const sushiData: SushiItem[] = [
     spineCrop: { x: 0.5, y: 0, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.5, y: 0, w: 0.25, h: 0.3333 },
   },
   {
-    id: 'aburi-salmon', title: 'Aburi Salmon', titleEs: 'Salmón aburi', romaji: 'Aburi Sāmon', kanji: '炙りサーモン', category: 'nigiri', price: 145,
+    id: 'aburi-salmon', title: 'Aburi Sake', titleEs: 'Salmón aburi', romaji: 'Aburi Sāmon', kanji: '炙りサーモン', category: 'nigiri', price: 145,
     images: galleries.aburiSalmon,
     ingredients: ['Salmón', 'arroz de sushi', 'ponzu de yuzu', 'sal de mar'],
     allergens: ['Pescado', 'Soya', 'Gluten'],
@@ -117,7 +117,7 @@ export const sushiData: SushiItem[] = [
     spineCrop: { x: 0.75, y: 0.3333, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.75, y: 0.3333, w: 0.25, h: 0.3333 },
   },
   {
-    id: 'a5-wagyu-nigiri', title: 'A5 Wagyu Nigiri', titleEs: 'Nigiri de wagyu A5', romaji: 'Wagyū A5 Nigiri', kanji: '和牛A5握り', category: 'specials', price: 320,
+    id: 'a5-wagyu-nigiri', title: 'A5 Wagyu Nigiri', titleEs: 'Nigiri de wagyu A5', romaji: 'Wagyū A5 Nigiri', kanji: '和牛A5握り', category: 'nigiri', price: 320,
     images: galleries.a5WagyuNigiri,
     ingredients: ['Wagyu japonés A5', 'arroz de sushi', 'sal de Maldon', 'wasabi'],
     allergens: [],
@@ -144,7 +144,7 @@ export const sushiData: SushiItem[] = [
     spineCrop: { x: 0.5, y: 0.6666, w: 0.25, h: 0.3334 }, coverCrop: { x: 0.5, y: 0.6666, w: 0.25, h: 0.3334 },
   },
   {
-    id: 'ceremonial-matcha', title: 'Ceremonial Matcha', titleEs: 'Matcha ceremonial', romaji: 'Matcha', kanji: '抹茶', category: 'specials', price: 120,
+    id: 'ceremonial-matcha', title: 'Ceremonial Matcha', titleEs: 'Matcha ceremonial', romaji: 'Matcha', kanji: '抹茶', category: 'bebidas', price: 120,
     images: galleries.ceremonialMatcha,
     ingredients: ['Té verde matcha ceremonial', 'agua a 80 °C'],
     allergens: [],
@@ -216,4 +216,30 @@ export const sushiData: SushiItem[] = [
     synopsis: 'Helado cremoso de sésamo negro tostado, con notas profundas de nuez y dulzor equilibrado.',
     spineCrop: { x: 0.75, y: 0.3333, w: 0.25, h: 0.3333 }, coverCrop: { x: 0.75, y: 0.3333, w: 0.25, h: 0.3333 },
   },
+  {
+    id: 'agedashi-tofu', title: 'Agedashi Tofu', titleEs: 'Tofu agedashi', romaji: 'Agedashi Dōfu', kanji: '揚げ出し豆腐', category: 'entradas', price: 125,
+    images: [photo('photo-1547592180-85f173990554'), photo('photo-1563245372-f21724e3856d'), photo('photo-1547592180-85f173990554')],
+    ingredients: ['Tofu sedoso', 'fécula de papa', 'dashi', 'salsa de soya', 'daikon', 'cebollín'],
+    allergens: ['Soya', 'Gluten'],
+    sakePairing: 'Junmai ginjo frío · notas limpias que acompañan el caldo dashi y la textura del tofu.',
+    synopsis: 'Tofu sedoso ligeramente frito, servido en caldo tentsuyu de dashi y soya con daikon y cebollín.',
+    spineCrop: { x: 0, y: 0.6666, w: 0.25, h: 0.3334 }, coverCrop: { x: 0, y: 0.6666, w: 0.25, h: 0.3334 },
+  },
 ];
+
+const categorySequence: SushiItem['id'][] = [
+  'edamame-steamed', 'pork-gyoza', 'agedashi-tofu', 'edamame-spicy',
+  'otoro-nigiri', 'aburi-salmon', 'sea-urchin-gunkan', 'a5-wagyu-nigiri',
+  'dragon-roll', 'spicy-tuna-roll', 'soft-shell-crab',
+  'yellowtail-sashimi', 'scallop-sashimi',
+  'unagi-foie-gras', 'tempura-king-prawn',
+  'junmai-daiginjo-sake', 'sapporo-beer', 'iced-matcha', 'ceremonial-matcha',
+  'matcha-mochi', 'black-sesame-ice-cream',
+];
+
+const itemById = new Map(sushiCatalog.map((item) => [item.id, item]));
+export const sushiData: SushiItem[] = categorySequence.map((id) => {
+  const item = itemById.get(id);
+  if (!item) throw new Error(`Falta el platillo requerido en el orden del menú: ${id}`);
+  return item;
+});
