@@ -51,6 +51,8 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
           </article>
         ))}
       </div>
+      <button class="stage-nav stage-prev btn" type="button" data-nav="-1" aria-label="Platillo anterior">‹</button>
+      <button class="stage-nav stage-next btn" type="button" data-nav="1" aria-label="Platillo siguiente">›</button>
     </div>
     <div class="shelf" aria-hidden="true"></div>
     <p class="stage-hint">ELIGE UNA PIEZA <span>✳</span> 12 ESPECIALIDADES</p>
@@ -111,8 +113,9 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     probe.remove();
 
     let cardHeight = H || Math.min(330, Math.max(230, window.innerHeight * 0.38));
-    let ws = Math.max(16, cardHeight * 0.14);
-    let d = Math.max(140, cardHeight * 0.68);
+    let mobileLayout = window.matchMedia('(max-width: 767px)').matches;
+    let ws = Math.max(mobileLayout ? 18 : 16, cardHeight * (mobileLayout ? 0.17 : 0.14));
+    let d = Math.max(mobileLayout ? 125 : 140, cardHeight * (mobileLayout ? 0.88 : 0.68));
     shelf.style.setProperty('--H', `${cardHeight}px`);
     shelf.style.setProperty('--ws', `${ws}px`);
     shelf.style.setProperty('--d', `${d}px`);
@@ -133,6 +136,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     let pointerStartX = 0;
     let pointerStartT = 0;
     let dragging = false;
+    let dragPointerType = 'mouse';
     let dragMoved = false;
     let frame = 0;
     let lastWatermarkCategory = '';
@@ -338,10 +342,14 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     }, { passive: false });
 
     const viewport = shelf.querySelector<HTMLElement>('.shelf-section__viewport');
+    shelf.querySelectorAll<HTMLButtonElement>('.stage-nav').forEach((button) => button.addEventListener('click', () => {
+      T += Number(button.dataset.nav ?? 0);
+    }));
     viewport?.addEventListener('pointerdown', (event) => {
       const pointer = event as PointerEvent;
       if (pointer.button !== 0) return;
       dragging = true;
+      dragPointerType = pointer.pointerType;
       dragMoved = false;
       pointerStartX = pointer.clientX;
       pointerStartT = T;
@@ -370,6 +378,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       });
     });
     const finishPointer = (event: PointerEvent) => {
+      if (dragging && dragPointerType === 'touch' && dragMoved) T = Math.round(T);
       dragging = false;
       if (viewport?.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
     };
@@ -377,6 +386,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     viewport?.addEventListener('pointercancel', finishPointer);
 
     viewport?.addEventListener('click', (event) => {
+      if (event.target instanceof Element && event.target.closest('.stage-nav')) return;
       if (dragMoved) {
         dragMoved = false;
         return;
@@ -432,8 +442,9 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       const nextH = nextProbe.getBoundingClientRect().height || Math.min(330, Math.max(230, window.innerHeight * 0.38));
       nextProbe.remove();
       cardHeight = nextH;
-      ws = Math.max(16, nextH * 0.14);
-      d = Math.max(140, nextH * 0.68);
+      mobileLayout = window.matchMedia('(max-width: 767px)').matches;
+      ws = Math.max(mobileLayout ? 18 : 16, nextH * (mobileLayout ? 0.17 : 0.14));
+      d = Math.max(mobileLayout ? 125 : 140, nextH * (mobileLayout ? 0.88 : 0.68));
       shelf.style.setProperty('--H', `${nextH}px`);
       shelf.style.setProperty('--ws', `${ws}px`);
       shelf.style.setProperty('--d', `${d}px`);
@@ -477,6 +488,9 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   .shelf::before { content: ''; position: absolute; z-index: -1; left: 50%; top: -20px; width: 78%; height: 44px; transform: translateX(-50%) scaleX(var(--shadow-scale)); transform-origin: center; background: radial-gradient(ellipse at center, rgba(20,20,20,0.12) 0%, transparent 70%); opacity: var(--shadow-strength); filter: blur(var(--shadow-blur)); transition: opacity 140ms linear, filter 140ms linear, transform 140ms linear; }
   .stage-hint { z-index: 1; margin: -5px 0 0; color: #827e75; font-size: 8px; }
   .stage-hint span { padding: 0 10px; color: var(--cobalt); }
+  .stage-nav { position: absolute; z-index: 4; top: 50%; display: grid; width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid var(--rule); border-radius: 50%; transform: translateY(-50%); background: rgba(247, 244, 239, .84); color: var(--ink); font: 300 28px/1 'Newsreader', serif; touch-action: manipulation; }
+  .stage-prev { left: max(16px, 4vw); }
+  .stage-next { right: max(16px, 4vw); }
   :global(.caption-mask) { z-index: 1; position: relative; width: min(720px, 88vw); height: 104px; margin: 5px auto 0; overflow: hidden; text-align: center; }
   :global(.caption-content) { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 36px 24px; align-content: center; align-items: start; padding: 0 8%; will-change: transform, opacity; transition: transform .48s var(--ease), opacity .48s var(--ease); }
   :global(.caption-content.from-below) { transform: translateY(100%); opacity: 0; }
@@ -506,6 +520,28 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     .footer-kanji { display: none; }
     :global(.caption-title) { font-size: 27px; }
     :global(.caption-mask) { height: 116px; }
+  }
+  @media (max-width: 767px) {
+    .shelf-section { --H: min(52vw, 36svh); min-height: 100svh; perspective: 1200px; }
+    .topbar { grid-template-columns: 1fr auto; padding: 12px 5vw 8px; }
+    .categories { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; gap: 3px; width: 100%; margin-top: 5px; overflow-x: auto; overflow-y: hidden; }
+    .category { display: inline-flex; flex: 0 0 auto; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; padding: 0 7px; font-size: 8px; }
+    .category.active::before { width: 4px; height: 4px; margin-right: 5px; }
+    .stage-wrap { min-height: 0; padding: 18px 0 20px; perspective: 1200px; }
+    .eyebrow { margin-bottom: 7px; font-size: 8px; }
+    h1 { font-size: clamp(27px, 7vw, 38px); }
+    .shelf-section__viewport { height: min(42svh, 340px); min-height: 255px; perspective: 1200px; perspective-origin: 50% 46%; touch-action: pan-y; }
+    .stage { transform: rotateX(-3deg); }
+    .geometry-probe { height: min(52vw, 36svh) !important; }
+    .stage-nav { width: 44px; height: 44px; }
+    .stage-prev { left: 3vw; }
+    .stage-next { right: 3vw; }
+    .shelf { bottom: 14%; }
+    .stage-hint { margin-top: 2px; }
+    :global(.caption-mask) { width: min(94vw, 520px); height: 94px; margin-top: 2px; }
+    :global(.caption-content) { grid-template-rows: 34px 23px; padding: 0 4%; }
+    :global(.caption-title) { font-size: clamp(25px, 7vw, 30px); }
+    .footer { padding-top: 12px; padding-bottom: 16px; }
   }
   @media (prefers-reduced-motion: reduce) { :global(.caption-content) { transition-duration: .01ms; } }
 </style>
