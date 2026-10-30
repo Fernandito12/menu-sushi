@@ -14,7 +14,6 @@
       </div>
       <div class="detail-line" data-detail-line><p class="detail-ingredients"><span>INGREDIENTES</span><b data-field="ingredients">Anguila · aguacate · arroz</b></p></div>
       <div class="detail-line" data-detail-line><div class="sake-copy"><span>MARIDAJE DE SAKE</span><p data-field="sake">Junmai ginjo frío · notas de pera y arroz.</p></div></div>
-      <div class="modal-bottom-sentinel" id="modal-bottom-sentinel" data-cta-trigger aria-hidden="true"></div>
     </section>
 
     <div class="detail-art modal-gallery" aria-label="Fotografías del platillo">
@@ -38,7 +37,9 @@
       <span class="art-caption" lang="ja">季節の一皿</span>
     </div>
   </div>
-  <button class="detail-order floating-cta cta-btn" type="button" data-order aria-label="Añadir platillo al pedido">
+<div class="modal-bottom-sentinel" id="modal-bottom-sentinel" data-cta-trigger aria-hidden="true"></div>
+</div>
+<button class="detail-order floating-cta cta-btn" type="button" data-order aria-label="Añadir platillo al pedido">
     <span class="detail-order-symbol" aria-hidden="true">
       <svg class="kinchaku-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M8 7.5c.7-1.4 1.9-2.2 4-2.2s3.3.8 4 2.2l1.7 2.1c1.3 1.6 1.8 3 1.4 4.5l-1.5 5.1c-.3 1-1.2 1.6-2.2 1.6H8.6c-1 0-1.9-.6-2.2-1.6l-1.5-5.1c-.4-1.5.1-2.9 1.4-4.5L8 7.5Z" />
@@ -51,7 +52,6 @@
     <span class="detail-order-label" data-order-label>AÑADIR AL PEDIDO <i lang="ja">注文する</i></span>
     <b class="detail-order-arrow" aria-hidden="true">↗</b>
   </button>
-</div>
 
 <script>
   import Swiper from '../../nolimits4web-swiper-e043db5/src/swiper.ts';
@@ -75,9 +75,9 @@
   const modal = document.querySelector<HTMLElement>('.detail-modal');
   const inner = modal?.querySelector<HTMLElement>('.detail-inner');
   const closeButton = modal?.querySelector<HTMLButtonElement>('[data-close]');
-  const orderButton = modal?.querySelector<HTMLButtonElement>('[data-order]');
-  const orderLabel = modal?.querySelector<HTMLElement>('[data-order-label]');
-  const orderPrice = modal?.querySelector<HTMLElement>('[data-order-price]');
+  const orderButton = document.querySelector<HTMLButtonElement>('[data-order]');
+  const orderLabel = orderButton?.querySelector<HTMLElement>('[data-order-label]');
+  const orderPrice = orderButton?.querySelector<HTMLElement>('[data-order-price]');
   const ctaAnchor = modal?.querySelector<HTMLElement>('#modal-bottom-sentinel');
   const modalScrollContainer = modal?.querySelector<HTMLElement>('.modal-scroll-area, .modal-body') ?? modal;
   const galleryArt = modal?.querySelector<HTMLElement>('.detail-art');
@@ -122,7 +122,7 @@
       const anchorEntry = entries.find((entry) => entry.target === ctaAnchor);
       if (anchorEntry) ctaSentinelVisible = anchorEntry.isIntersecting && anchorEntry.intersectionRatio >= 1;
       updateCtaExpansion();
-    }, { root: modalScrollContainer, threshold: 1.0, rootMargin: '0px 0px -10px 0px' });
+    }, { root: modalScrollContainer, threshold: 1.0, rootMargin: '0px' });
     ctaObserver.observe(ctaAnchor);
     modalScrollContainer?.addEventListener('scroll', updateCtaExpansion, { passive: true });
 
@@ -439,7 +439,8 @@
   .sake-copy { margin: 0 0 28px; padding-left: 14px; border-left: 1px solid var(--cobalt); }
   .sake-copy p { max-width: 480px; margin: 6px 0 0; color: #4c4e4a; font: 400 14px/1.45 'Newsreader', serif; }
   .modal-bottom-sentinel { display: block; width: 100%; height: 1px; min-height: 1px; flex: 0 0 1px; }
-  .floating-cta { position: fixed !important; z-index: 60 !important; right: 20px !important; bottom: max(20px, env(safe-area-inset-bottom)) !important; left: auto !important; width: 56px; height: 56px; min-height: 56px; display: flex; align-items: center; justify-content: center; padding: 0; overflow: visible; border: 1px solid rgba(255,255,255,.3); border-radius: 28px; background: rgba(31,63,176,.95); color: #fff; box-shadow: 0 10px 25px rgba(20,16,10,.25); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); cursor: pointer; font: 500 10px 'Inter Tight', sans-serif; letter-spacing: .1em; transition: transform .4s cubic-bezier(.16,1,.3,1), width .4s cubic-bezier(.16,1,.3,1), border-radius .3s ease, bottom .4s ease, left .4s cubic-bezier(.16,1,.3,1), right .4s cubic-bezier(.16,1,.3,1), height .4s ease, padding .4s ease, background-color .3s ease; animation: pulseGlow 3s infinite ease-in-out; }
+  .floating-cta { position: fixed !important; z-index: 70 !important; right: 24px !important; bottom: max(24px, env(safe-area-inset-bottom)) !important; left: auto !important; width: 56px; height: 56px; min-height: 56px; display: flex; align-items: center; justify-content: center; padding: 0; overflow: visible; border: 1px solid rgba(255,255,255,.3); border-radius: 28px; background: rgba(31,63,176,.95); color: #fff; box-shadow: 0 10px 28px rgba(20,16,10,.28); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transform-origin: right center !important; opacity: 0; visibility: hidden; pointer-events: none; cursor: pointer; font: 500 10px 'Inter Tight', sans-serif; letter-spacing: .1em; transition: width .45s cubic-bezier(.16,1,.3,1), left .45s cubic-bezier(.16,1,.3,1), border-radius .35s ease, background-color .3s ease, opacity .25s ease, visibility .25s ease; animation: pulseGlow 3s infinite ease-in-out; }
+  :global(body.detail-open) .floating-cta { opacity: 1; visibility: visible; pointer-events: auto; }
   .detail-order-symbol { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #fff; transition: transform .35s cubic-bezier(.16,1,.3,1), opacity .25s ease; }
   .kinchaku-icon { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.2px; transition: transform .45s cubic-bezier(.16,1,.3,1); }
   .detail-order-kanji { font: 400 8px/1 'Noto Sans JP', sans-serif; letter-spacing: .02em; }
@@ -450,7 +451,7 @@
   .detail-order-label { left: 18px; right: 52px; display: block; text-align: left; white-space: nowrap; }
   .detail-order-label i { margin-left: 6px; font: 12px 'Noto Sans JP',sans-serif; font-style: normal; letter-spacing: 0; }
   .detail-order-arrow { right: 18px; font: 400 17px 'Inter Tight',sans-serif; }
-  .floating-cta.is-expanded { right: 20px !important; left: 20px !important; width: calc(100% - 40px) !important; height: 52px !important; min-height: 52px; justify-content: flex-start; padding: 0 18px; border-radius: 14px !important; animation: none; }
+  .floating-cta.is-expanded { right: 24px !important; left: auto !important; width: calc(100vw - 48px) !important; height: 52px !important; min-height: 52px; justify-content: flex-start; padding: 0 18px; border-radius: 14px !important; animation: none; }
   .detail-order.is-expanded .detail-order-symbol { margin-right: 12px; }
   .detail-order.is-expanded .detail-order-label, .detail-order.is-expanded .detail-order-arrow { position: static; opacity: 1; visibility: visible; transform: translateY(0); }
   .detail-order.is-expanded .detail-order-label { flex: 1; }
@@ -572,7 +573,7 @@
       justify-content: flex-start;
       gap: 12px;
       overflow: visible;
-      padding-bottom: 96px !important;
+      padding-bottom: 100px !important;
     }
     .modal-info > .detail-close {
       position: fixed;
@@ -610,8 +611,8 @@
     .detail-ingredients { gap: 5px; margin: 0; }
     .sake-copy { margin: 0; }
     .sake-copy p { max-width: none; }
-    .floating-cta { right: 20px !important; bottom: max(20px, env(safe-area-inset-bottom)) !important; left: auto !important; z-index: 60 !important; width: 56px; height: 56px; min-height: 56px; }
-    .floating-cta.is-expanded { right: 20px !important; left: 20px !important; width: calc(100% - 40px) !important; height: 52px !important; min-height: 52px; }
+    .floating-cta { right: 24px !important; bottom: max(24px, env(safe-area-inset-bottom)) !important; left: auto !important; z-index: 70 !important; width: 56px; height: 56px; min-height: 56px; }
+    .floating-cta.is-expanded { right: 24px !important; left: auto !important; width: calc(100vw - 48px) !important; height: 52px !important; min-height: 52px; }
     .art-caption { right: 10px; bottom: 10px; color: rgba(25, 27, 27, .72); }
   }
   @media (prefers-reduced-motion: reduce) {
