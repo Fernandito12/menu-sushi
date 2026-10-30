@@ -85,6 +85,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
     const B = (r: number) => (r + Math.sin(Math.PI * r) / Math.PI) / 2;
     const cursor = document.querySelector<HTMLElement>('.cursor');
+    const watermarkLayer = document.querySelector<HTMLElement>('.kanji-watermark-layer');
+    const watermarkCenter = watermarkLayer?.querySelector<HTMLElement>('[data-parallax="center"]');
+    const watermarkCategoryLayers = Array.from(watermarkCenter?.querySelectorAll<HTMLElement>('[data-watermark-category]') ?? []);
+    const watermarkParallax = Array.from(watermarkLayer?.querySelectorAll<HTMLElement>('[data-parallax]') ?? []);
+    const shelfShadow = shelf.querySelector<HTMLElement>('.shelf');
     const caption = shelf.querySelector<HTMLElement>('[data-caption]');
     let currentCaptionContent = caption?.querySelector<HTMLElement>('.caption-content') ?? null;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -127,6 +132,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     let dragging = false;
     let dragMoved = false;
     let frame = 0;
+    let lastWatermarkCategory = '';
 
     const dispatchOpenDetail = (card: HTMLElement) => {
       if (!card.classList.contains('open')) return;
@@ -228,11 +234,30 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       }
 
       const activeCaptionIndex = Math.floor(mod(s + 0.5, count));
+      const activeCategory = cards[activeCaptionIndex]?.dataset.category ?? 'specials';
+      const watermarkCategory = ['nigiri', 'maki', 'sashimi'].includes(activeCategory) ? activeCategory : 'default';
+      if (watermarkCategory !== lastWatermarkCategory) {
+        watermarkCategoryLayers.forEach((layer) => layer.classList.toggle('is-active', layer.dataset.watermarkCategory === watermarkCategory));
+        lastWatermarkCategory = watermarkCategory;
+      }
       if (activeCaptionIndex !== lastCaptionIndex) {
         const direction = shortestDistance(lastCaptionIndex, activeCaptionIndex);
         setCaption(cards[activeCaptionIndex], direction);
         lastCaptionIndex = activeCaptionIndex;
       }
+
+      // Subtle, bounded parallax keeps the monumental type in frame over long circular navigation.
+      const scrollDrift = Math.sin((s / count) * Math.PI * 2) * 15;
+      const mx = (pointerX / Math.max(window.innerWidth, 1) - 0.5) * 2;
+      const my = (pointerY / Math.max(window.innerHeight, 1) - 0.5) * 2;
+      watermarkParallax.forEach((kanji) => {
+        const layer = kanji.dataset.parallax;
+        if (layer === 'left') kanji.style.transform = `translate3d(0, ${-scrollDrift}px, 0) rotate(-7deg)`;
+        else if (layer === 'right') kanji.style.transform = `translate3d(${scrollDrift * 0.55}px, 0, 0) rotate(${scrollDrift / 15 * 2}deg)`;
+        else if (layer === 'center') kanji.style.transform = `translate3d(-50%, -50%, 0) translate3d(${mx * 13}px, ${my * 13}px, 0) rotate(${mx * 0.6}deg)`;
+        else if (layer === 'top') kanji.style.transform = `translate3d(0, ${scrollDrift * 0.28}px, 0) rotate(3deg)`;
+        else if (layer === 'bottom') kanji.style.transform = `translate3d(${scrollDrift * -0.32}px, 0, 0) rotate(-4deg)`;
+      });
 
       cards.forEach((card, index) => {
         const r = shortestDistance(s, index);
@@ -257,6 +282,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
 
         const shade = (0.55 + 0.45 * Math.cos(Math.abs(rotateY) * Math.PI / 180)).toFixed(3);
         card.querySelectorAll<HTMLElement>('.sp, .cv').forEach((face) => face.style.setProperty('--shade', shade));
+        if (active && shelfShadow) {
+          shelfShadow.style.setProperty('--shadow-strength', (0.55 + open * 0.45).toFixed(3));
+          shelfShadow.style.setProperty('--shadow-blur', `${18 + open * 22}px`);
+          shelfShadow.style.setProperty('--shadow-scale', (1 + open * 0.16).toFixed(3));
+        }
       });
 
       frame = requestAnimationFrame(animate);
@@ -408,7 +438,8 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   .cover-price small { font: 8px 'Inter Tight', sans-serif; }
   .sp-title { position: absolute; left: 50%; top: 18px; writing-mode: vertical-rl; transform: translateX(-50%); font: 500 13px 'Newsreader', serif; }
   .sp-kanji { position: absolute; left: 50%; bottom: 17px; transform: translateX(-50%); writing-mode: vertical-rl; font: 13px 'Noto Sans JP', sans-serif; }
-  .shelf { position: absolute; bottom: 15%; left: 17%; width: 66%; height: 2px; background: linear-gradient(90deg, transparent, rgba(58, 48, 34, .34), transparent); box-shadow: 0 8px 13px rgba(50, 40, 27, .12); }
+  .shelf { --shadow-strength: .55; --shadow-blur: 18px; --shadow-scale: 1; position: absolute; bottom: 15%; left: 17%; width: 66%; height: 2px; background: linear-gradient(90deg, transparent, rgba(58, 48, 34, .34), transparent); box-shadow: 0 8px 13px rgba(50, 40, 27, .12); }
+  .shelf::before { content: ''; position: absolute; z-index: -1; left: 50%; top: -20px; width: 78%; height: 44px; transform: translateX(-50%) scaleX(var(--shadow-scale)); transform-origin: center; background: radial-gradient(ellipse at center, rgba(20,20,20,0.12) 0%, transparent 70%); opacity: var(--shadow-strength); filter: blur(var(--shadow-blur)); transition: opacity 140ms linear, filter 140ms linear, transform 140ms linear; }
   .stage-hint { z-index: 1; margin: -5px 0 0; color: #827e75; font-size: 8px; }
   .stage-hint span { padding: 0 10px; color: var(--cobalt); }
   :global(.caption-mask) { z-index: 1; position: relative; width: min(720px, 88vw); height: 104px; margin: 5px auto 0; overflow: hidden; text-align: center; }

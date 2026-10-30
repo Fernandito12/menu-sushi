@@ -12,14 +12,20 @@ const { title = 'TAKUMI OMAKASE — 匠' } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Noto+Sans+JP:wght@400;500&family=Noto+Serif+JP:wght@700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div class="kanji-atmosphere" aria-hidden="true">
-      <span class="kanji-one" lang="ja">匠</span>
-      <span class="kanji-two" lang="ja">鮨</span>
-      <span class="kanji-three" lang="ja">味</span>
-      <span class="kanji-four" lang="ja">旬</span>
+    <div class="kanji-watermark-layer" aria-hidden="true">
+      <span class="watermark watermark-left" data-parallax="left" lang="ja">匠</span>
+      <span class="watermark watermark-right" data-parallax="right" lang="ja">鮨</span>
+      <span class="watermark watermark-center" data-parallax="center" lang="ja">
+        <span class="watermark-category is-active" data-watermark-category="default">旬</span>
+        <span class="watermark-category" data-watermark-category="nigiri">握り</span>
+        <span class="watermark-category" data-watermark-category="maki">巻き</span>
+        <span class="watermark-category" data-watermark-category="sashimi">刺身</span>
+      </span>
+      <span class="watermark watermark-top" data-parallax="top" lang="ja">鮮</span>
+      <span class="watermark watermark-bottom" data-parallax="bottom" lang="ja">旨</span>
     </div>
     <div class="cursor" aria-hidden="true">
       <span class="cursor-dot"></span>
@@ -48,12 +54,15 @@ const { title = 'TAKUMI OMAKASE — 匠' } = Astro.props;
   *, *::before, *::after { box-sizing: border-box; }
   html { min-width: 320px; background: var(--paper); }
   body { margin: 0; min-height: 100vh; color: var(--ink); background: var(--paper); font-family: 'Inter Tight', sans-serif; }
-  .kanji-atmosphere { position: fixed; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; user-select: none; }
-  .kanji-atmosphere span { position: absolute; color: var(--cobalt); opacity: .055; font: 500 clamp(100px, 15vw, 220px)/1 'Noto Sans JP', sans-serif; }
-  .kanji-one { top: 8%; left: 7%; transform: rotate(-9deg); }
-  .kanji-two { top: 22%; right: 9%; transform: rotate(8deg); }
-  .kanji-three { bottom: 8%; left: 19%; transform: rotate(5deg); }
-  .kanji-four { right: 15%; bottom: 12%; transform: rotate(-8deg); }
+  .kanji-watermark-layer { position: fixed; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; user-select: none; mix-blend-mode: multiply; }
+  .watermark { position: absolute; display: block; color: var(--ink); opacity: .045; font: 700 clamp(18vw, 32vw, 450px)/.88 'Noto Serif JP', 'Noto Sans JP', serif; writing-mode: vertical-rl; will-change: transform; }
+  .watermark-left { top: -10%; left: -3%; color: var(--cobalt); }
+  .watermark-right { top: 4%; right: -4%; color: var(--ink); }
+  .watermark-top { top: -14%; left: 38%; opacity: .035; }
+  .watermark-bottom { right: 31%; bottom: -29%; color: var(--cobalt); opacity: .035; }
+  .watermark-center { top: 50%; left: 50%; display: grid; place-items: center; transform: translate(-50%, -50%); color: var(--ink); opacity: .05; }
+  .watermark-category { grid-area: 1 / 1; opacity: 0; transition: opacity 850ms var(--ease); }
+  .watermark-category.is-active { opacity: 1; }
   .paper-grain { position: fixed; inset: 0; z-index: 20; pointer-events: none; opacity: .55; mix-blend-mode: multiply; }
   .paper-grain svg { display: block; width: 100%; height: 100%; }
   .cursor { --cursor-x: 50vw; --cursor-y: 50vh; --cursor-scale: 1; position: fixed; z-index: 60; top: 0; left: 0; width: 58px; height: 58px; display: grid; place-items: center; border: 1px solid rgba(36, 78, 138, .52); border-radius: 50%; color: var(--ink); pointer-events: none; opacity: 0; transform: translate3d(var(--cursor-x), var(--cursor-y), 0) translate(-50%, -50%) scale(var(--cursor-scale)); transition: opacity .18s ease, color .18s ease, background-color .18s ease, border-color .18s ease; }
@@ -69,4 +78,5 @@ const { title = 'TAKUMI OMAKASE — 匠' } = Astro.props;
   body.detail-open .cursor { opacity: 0 !important; }
   @media (pointer: fine) { body, body button { cursor: none; } }
   @media (pointer: coarse) { .cursor { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .watermark-category { transition-duration: .01ms; } }
 </style>
