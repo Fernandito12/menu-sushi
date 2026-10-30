@@ -1,0 +1,14 @@
+{
+  "name": "takumi-omakase-menu",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^5.14.1",
+    "takumi-omakase-menu": "file:"
+  }
+}
