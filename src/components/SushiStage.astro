@@ -89,6 +89,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     const shortestDistance = (from: number, to: number) => mod(to - from + count / 2, count) - count / 2;
     const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
     const B = (r: number) => (r + Math.sin(Math.PI * r) / Math.PI) / 2;
+    const smoothstep = (value: number) => value * value * (3 - 2 * value);
     const cursor = document.querySelector<HTMLElement>('.cursor');
     const watermarkLayer = document.querySelector<HTMLElement>('.kanji-watermark-layer');
     const watermarkCenter = watermarkLayer?.querySelector<HTMLElement>('[data-parallax="center"]');
@@ -364,17 +365,18 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         const easedSpread = 2 * B(clamp(absR, 0, 1)) * d;
         const x = r * ws + side * easedSpread;
         const active = absR < 0.5;
-        const open = active ? 1 - absR * 2 : 0;
-        const tiltY = open * 90;
-        const rotateY = active ? -90 + tiltY : -90;
+        const open = smoothstep(Math.max(0, 1 - absR));
         const mouseTiltX = Number(card.style.getPropertyValue('--tilt-x')) || 0;
         const mouseTiltY = Number(card.style.getPropertyValue('--tilt-y')) || 0;
-        const translateY = active ? -cardHeight * 0.035 : 0;
-        const translateZ = active ? 0.2 * cardHeight : 0;
-        const rotateZ = active ? -4.5 : 0;
+        const lift = Math.max(0, 1 - absR);
+        const rotateX = mouseTiltX * open;
+        const rotateY = -90 * open + mouseTiltY * open;
+        const rotateZ = -4.5 * open;
+        const translateY = -open * (0.025 * cardHeight) - lift * (0.045 * cardHeight);
+        const translateZ = open * (0.2 * cardHeight);
         card.classList.toggle('open', active);
         card.tabIndex = active ? 0 : -1;
-        card.style.transform = `translate3d(${x}px, ${translateY}px, ${translateZ}px) rotateX(${mouseTiltX}deg) rotateY(${rotateY + mouseTiltY}deg) rotateZ(${rotateZ}deg)`;
+        card.style.transform = `translate3d(${x}px, ${translateY}px, ${translateZ}px) rotateZ(${rotateZ}deg) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
         card.style.zIndex = String(Math.round(1000 - absR * 10));
 
         const shade = (0.55 + 0.45 * Math.cos(Math.abs(rotateY) * Math.PI / 180)).toFixed(3);
@@ -552,11 +554,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   h1 { z-index: 1; margin: 0; font: 400 clamp(28px, 3.2vw, 48px)/1.1 'Newsreader', serif; letter-spacing: -.035em; }
   .shelf-section__viewport { width: 100%; height: clamp(360px, 48svh, 510px); position: relative; display: grid; place-items: center; perspective: 2200px; perspective-origin: 50% 43%; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transform: translateZ(0); will-change: transform; touch-action: pan-y; }
   .stage { position: relative; width: 1px; height: 1px; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transform: translateZ(0) rotateX(-5deg); will-change: transform; }
-  .tape { position: absolute; left: calc(var(--d, 210px) / -2); top: calc(var(--H, 300px) / -2); width: var(--d, 210px); height: var(--H, 300px); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; will-change: transform; }
+  .tape { position: absolute; left: calc(var(--d, 210px) / -2); top: 0; width: var(--d, 210px); height: var(--H, 300px); transform-style: preserve-3d; -webkit-transform-style: preserve-3d; will-change: transform; }
   .geometry-probe { position: fixed !important; left: -10000px !important; top: 0 !important; visibility: hidden !important; transform: none !important; width: 1px !important; height: clamp(230px, 38vh, 330px) !important; }
-  .cv, .sp { position: absolute; top: 0; height: 100%; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 18px 35px rgba(37, 31, 20, .17), 0 2px 5px rgba(37, 31, 20, .14); filter: brightness(var(--shade, .55)); }
-  .cv { left: 0; width: var(--d, 210px); display: flex; align-items: flex-end; color: #fff; background-color: #5b4c3c; background-image: linear-gradient(0deg, rgba(20, 17, 14, .78), rgba(20, 17, 14, .08) 72%), var(--card-image); background-size: cover; background-position: center; }
-  .sp { left: 0; width: var(--ws, 42px); transform: rotateY(90deg) translateZ(calc(var(--ws, 42px) / 2)); transform-origin: left center; background-color: #7b6548; background-image: linear-gradient(90deg, rgba(30, 24, 17, .58), rgba(30, 24, 17, .12)), var(--card-image); background-size: cover; background-position: center; color: #fffaf0; }
+  .cv, .sp { position: absolute; top: -50%; height: var(--H, 300px); overflow: hidden; backface-visibility: hidden !important; -webkit-backface-visibility: hidden !important; filter: brightness(var(--shade, .55)); }
+  .cv { left: calc(var(--d, 210px) / -2); width: var(--d, 210px); display: flex; align-items: flex-end; color: #fff; background-color: #5b4c3c; background-image: linear-gradient(0deg, rgba(20, 17, 14, .78), rgba(20, 17, 14, .08) 72%), var(--card-image); background-size: cover; background-position: center; transform: rotateY(90deg) translateZ(calc(var(--ws, 42px) / 2)); box-shadow: 0 30px 60px -28px rgba(20,16,10,0.55); }
+  .sp { left: calc(var(--ws, 42px) / -2); width: var(--ws, 42px); transform: translateZ(calc(var(--d, 210px) / 2)); box-shadow: 0 18px 35px rgba(37, 31, 20, .17), 0 2px 5px rgba(37, 31, 20, .14); background-color: #7b6548; background-image: linear-gradient(90deg, rgba(30, 24, 17, .58), rgba(30, 24, 17, .12)), var(--card-image); background-size: cover; background-position: center; color: #fffaf0; }
   .cover-copy { display: flex; width: 100%; flex-direction: column; padding: 19px 17px; }
   .cover-category { color: #f0d8a8; font-size: 8px; }
   .cover-copy h2 { margin: 7px 0 2px; font: 500 25px/1.02 'Newsreader', serif; letter-spacing: -.02em; }
