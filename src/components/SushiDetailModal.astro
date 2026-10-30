@@ -44,16 +44,18 @@
         <image data-gallery-reveal href="" x="0" y="0" width="474" height="900" preserveAspectRatio="xMidYMid slice" mask="url(#ink-mask)" />
         <rect x=".5" y=".5" width="473" height="899" fill="none" stroke="rgba(25,27,27,.14)" />
       </svg>
-      <nav class="gallery-nav-pro" data-gallery-controls aria-label="Fotografías del platillo">
-        <button class="gallery-arrow gallery-arrow-prev" type="button" data-gallery-prev aria-label="Fotografía anterior">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 15 7-7 7 7" /></svg>
+      <nav class="gallery-nav-pro" data-gallery-controls aria-label="Galería vertical de fotografías">
+        <span class="expo-rail" aria-hidden="true"></span>
+        <button class="gallery-arrow gallery-arrow-prev" type="button" data-gallery-prev aria-label="Fotografía anterior, desplazar hacia arriba">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
         </button>
-        <div class="gallery-pagination">
-          <div class="gallery-dots" data-gallery-dots role="group" aria-label="Seleccionar fotografía"></div>
-          <span class="gallery-count" data-gallery-count aria-live="polite">01 / 01</span>
+        <div class="expo-readout">
+          <span class="expo-num" data-expo-num aria-live="polite">01</span>
+          <div class="expo-progress" data-gallery-dots role="group" aria-label="Seleccionar fotografía"></div>
+          <span class="expo-total" data-expo-total>03</span>
         </div>
-        <button class="gallery-arrow gallery-arrow-next" type="button" data-gallery-next aria-label="Fotografía siguiente">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 9 7 7 7-7" /></svg>
+        <button class="gallery-arrow gallery-arrow-next" type="button" data-gallery-next aria-label="Fotografía siguiente, desplazar hacia abajo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </button>
       </nav>
       <span class="art-caption" lang="ja">季節の一皿</span>
@@ -88,7 +90,8 @@
   const galleryReveal = modal?.querySelector<SVGImageElement>('[data-gallery-reveal]');
   const galleryArt = modal?.querySelector<HTMLElement>('.detail-art');
   const galleryDots = modal?.querySelector<HTMLElement>('[data-gallery-dots]');
-  const galleryCount = modal?.querySelector<HTMLElement>('[data-gallery-count]');
+  const galleryNumber = modal?.querySelector<HTMLElement>('[data-expo-num]');
+  const galleryTotal = modal?.querySelector<HTMLElement>('[data-expo-total]');
   const previousPhotoButton = modal?.querySelector<HTMLButtonElement>('[data-gallery-prev]');
   const nextPhotoButton = modal?.querySelector<HTMLButtonElement>('[data-gallery-next]');
   const inkDots = Array.from(modal?.querySelectorAll<SVGCircleElement>('[data-ink-dot]') ?? []);
@@ -112,10 +115,12 @@
     let galleryRequest = 0;
     let touchStartX = 0;
     let touchStartY = 0;
-    let touchLastX = 0;
+    let touchLastY = 0;
     let touchLastTime = 0;
     let touchVelocity = 0;
-    let touchIsHorizontal = false;
+    let touchIsVertical = false;
+    let wheelLockedUntil = 0;
+    let galleryAnimations: Animation[] = [];
     const textAnimations: Animation[] = [];
 
     const setField = (field: string, value: string) => {
@@ -140,6 +145,7 @@
     const cancelDetailEffects = () => {
       cancelAnimationFrame(inkFrame);
       galleryRequest++;
+      galleryAnimations.splice(0).forEach((animation) => animation.cancel());
       openingAnimation?.cancel();
       openingAnimation = null;
       textAnimations.splice(0).forEach((animation) => animation.cancel());
@@ -177,13 +183,14 @@
       galleryImages.forEach((_, index) => {
         const dot = document.createElement('button');
         dot.type = 'button';
-        dot.className = `gallery-dot${index === selected ? ' is-active' : ''}`;
+        dot.className = `expo-mark${index === selected ? ' is-active' : ''}`;
         dot.setAttribute('aria-label', `Ver fotografía ${index + 1} de ${galleryImages.length}`);
         dot.setAttribute('aria-pressed', String(index === selected));
         dot.addEventListener('click', () => showGalleryImage(index));
         galleryDots.append(dot);
       });
-      if (galleryCount) galleryCount.textContent = `${String(selected + 1).padStart(2, '0')} / ${String(galleryImages.length).padStart(2, '0')}`;
+      if (galleryNumber) galleryNumber.textContent = String(selected + 1).padStart(2, '0');
+      if (galleryTotal) galleryTotal.textContent = String(galleryImages.length).padStart(2, '0');
       const controlsVisible = galleryImages.length > 1;
       galleryArt.classList.toggle('has-gallery', controlsVisible);
       previousPhotoButton.disabled = !controlsVisible;
@@ -202,9 +209,8 @@
       renderGalleryDots(0);
     };
 
-    const revealInk = (onComplete: () => void, duration = 650, stagger = 65) => {
+    const revealInk = (onComplete: () => void, duration = 650, stagger = 65, request = ++galleryRequest) => {
       cancelAnimationFrame(inkFrame);
-      const request = ++galleryRequest;
       inkDots.forEach((circle) => circle.setAttribute('r', '0'));
       const startedAt = performance.now();
       const draw = (now: number) => {
@@ -230,21 +236,56 @@
       setSvgImage(galleryBase, galleryImages[index]);
       galleryBase.style.opacity = '1';
       galleryReveal.style.opacity = '0';
+      galleryAnimations.splice(0).forEach((animation) => animation.cancel());
       inkDots.forEach((circle) => circle.setAttribute('r', '0'));
     };
 
     const showGalleryImage = (index: number) => {
       if (!isOpen || galleryImages.length < 2) return;
       const next = ((index % galleryImages.length) + galleryImages.length) % galleryImages.length;
-      if (next === galleryIndex && galleryReveal.style.opacity === '0') return;
+      if (next === galleryIndex) return;
+      const rawDelta = next - galleryIndex;
+      const direction = rawDelta > galleryImages.length / 2 ? -1 : rawDelta < -galleryImages.length / 2 ? 1 : Math.sign(rawDelta);
+      const request = ++galleryRequest;
+      cancelAnimationFrame(inkFrame);
+      galleryAnimations.splice(0).forEach((animation) => animation.cancel());
       galleryIndex = next;
       setSvgImage(galleryBase, galleryImages[galleryBaseIndex]);
       galleryBase.style.opacity = '1';
       setSvgImage(galleryReveal, galleryImages[next]);
       galleryReveal.style.opacity = '1';
       renderGalleryDots(next);
-      // Short, staggered ink pulse reveals every new photo through the paper texture.
-      revealInk(() => finishGalleryReveal(next), 420, 28);
+      const enterFrom = direction > 0 ? 72 : -72;
+      const leaveTo = direction > 0 ? -42 : 42;
+      galleryBase.style.transformBox = 'fill-box';
+      galleryBase.style.transformOrigin = 'center';
+      galleryReveal.style.transformBox = 'fill-box';
+      galleryReveal.style.transformOrigin = 'center';
+      const easing = 'cubic-bezier(0.16, 1, 0.3, 1)';
+      const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 720;
+      const outgoing = galleryBase.animate([
+        { transform: 'translateY(0) scale(1)', opacity: 1 },
+        { transform: `translateY(${leaveTo}px) scale(.95)`, opacity: 0 },
+      ], { duration, easing, fill: 'forwards' });
+      const incoming = galleryReveal.animate([
+        { transform: `translateY(${enterFrom}px) scale(1.15)`, opacity: 0 },
+        { transform: 'translateY(0) scale(1)', opacity: 1 },
+      ], { duration, easing, fill: 'forwards' });
+      galleryAnimations = [outgoing, incoming];
+      let expoDone = false;
+      let inkDone = false;
+      const complete = () => {
+        if (request === galleryRequest && expoDone && inkDone) finishGalleryReveal(next);
+      };
+      void Promise.allSettled([outgoing.finished, incoming.finished]).then(() => {
+        expoDone = true;
+        complete();
+      });
+      // The Expo slide and ink bloom resolve together; the wraparound is modulo-based.
+      revealInk(() => {
+        inkDone = true;
+        complete();
+      }, 420, 28, request);
     };
 
     const openDetail = async (payload: OpenDetailPayload) => {
@@ -365,36 +406,48 @@
       if (event.touches.length !== 1) return;
       const touch = event.touches[0];
       touchStartX = touch.clientX;
-      touchLastX = touch.clientX;
       touchStartY = touch.clientY;
+      touchLastY = touch.clientY;
       touchLastTime = performance.now();
       touchVelocity = 0;
-      touchIsHorizontal = false;
+      touchIsVertical = false;
     }, { passive: true });
     galleryArt.addEventListener('touchmove', (event) => {
       if (event.touches.length !== 1) return;
       const touch = event.touches[0];
-      const dx = touch.clientX - touchStartX;
       const dy = touch.clientY - touchStartY;
-      if (!touchIsHorizontal && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.15) touchIsHorizontal = true;
-      if (!touchIsHorizontal) return;
+      const dx = touch.clientX - touchStartX;
+      if (!touchIsVertical && Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx) * 1.1) touchIsVertical = true;
+      if (!touchIsVertical) return;
       event.preventDefault();
       const now = performance.now();
       const sampleTime = Math.max((now - touchLastTime) / 1000, 1 / 240);
-      touchVelocity = (touch.clientX - touchLastX) / sampleTime;
-      touchLastX = touch.clientX;
+      touchVelocity = (touch.clientY - touchLastY) / sampleTime;
+      touchLastY = touch.clientY;
       touchLastTime = now;
     }, { passive: false });
     galleryArt.addEventListener('touchend', (event) => {
-      if (!touchIsHorizontal) return;
+      if (!touchIsVertical) return;
       const touch = event.changedTouches[0];
-      const total = touch.clientX - touchStartX;
+      const total = touch.clientY - touchStartY;
       if (Math.abs(total) > 36) {
         const momentumSteps = Math.abs(touchVelocity) > 1250 ? 2 : 1;
         showGalleryImage(galleryIndex + (total < 0 ? momentumSteps : -momentumSteps));
       }
-      touchIsHorizontal = false;
+      touchIsVertical = false;
     }, { passive: true });
+    galleryArt.addEventListener('wheel', (event) => {
+      const wheel = event as WheelEvent;
+      if (Math.abs(wheel.deltaY) < Math.abs(wheel.deltaX) || Math.abs(wheel.deltaY) < 18) return;
+      const now = performance.now();
+      if (now < wheelLockedUntil) {
+        wheel.preventDefault();
+        return;
+      }
+      wheel.preventDefault();
+      wheelLockedUntil = now + 420;
+      showGalleryImage(galleryIndex + (wheel.deltaY > 0 ? 1 : -1));
+    }, { passive: false });
     modal.addEventListener('click', (event) => {
       if (event.target === modal) void closeDetail();
     });
@@ -449,23 +502,26 @@
   .detail-order b { font: 400 16px 'Inter Tight', sans-serif; }
   .detail-close:focus-visible, .detail-order:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 4px; }
   .detail-art { position: relative; min-width: 0; min-height: min(82vh, 900px); display: grid; place-items: center; }
-  .detail-art { touch-action: pan-y; }
+  .detail-art { touch-action: pan-x; }
   .detail-art svg { display: block; width: min(100%, 474px); height: min(82vh, 900px); overflow: visible; background: #e5dfd3; }
-  .gallery-nav-pro { position: absolute; z-index: 10; left: 20px; top: 50%; display: flex; flex-direction: column; align-items: center; gap: 12px; transform: translateY(-50%); pointer-events: auto; color: #fff; }
-  .gallery-nav-pro::before { content: ''; position: absolute; z-index: -1; top: 22px; bottom: 22px; left: 50%; width: 1px; transform: translateX(-50%); background: linear-gradient(to bottom, transparent, rgba(255,255,255,.25), transparent); pointer-events: none; }
-  .detail-art.has-gallery:hover .gallery-nav-pro, .detail-art.has-gallery:focus-within .gallery-nav-pro { opacity: 1; }
-  .gallery-nav-pro { opacity: .62; transition: opacity 300ms ease; }
-  .gallery-arrow { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: currentColor; cursor: pointer; opacity: .5; transition: opacity .3s ease; }
-  .gallery-arrow svg { display: block; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.2px; stroke-linecap: round; stroke-linejoin: round; }
-  .gallery-arrow:hover:not(:disabled), .gallery-nav-pro:focus-within .gallery-arrow:not(:disabled) { opacity: 1; }
+  .detail-art svg image[data-gallery-base], .detail-art svg image[data-gallery-reveal] { transform-box: fill-box; transform-origin: center; }
+  .gallery-nav-pro { position: absolute; z-index: 10; left: 18px; top: 50%; display: flex; flex-direction: column; align-items: center; gap: 6px; transform: translateY(-50%); pointer-events: auto; color: #fff; opacity: .52; transition: opacity .4s ease; }
+  .gallery-nav-pro:hover, .gallery-nav-pro:focus-within { opacity: .96; }
+  .expo-rail { position: absolute; z-index: -1; top: 57px; bottom: 57px; left: 50%; width: 1px; transform: translateX(-50%); background: rgba(255,255,255,.2); pointer-events: none; }
+  .expo-readout { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.38); }
+  .expo-num, .expo-total { font: 400 10px/1 'Inter Tight',sans-serif; letter-spacing: .2em; }
+  .expo-total { opacity: .6; }
+  .expo-progress { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .expo-mark { width: 32px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; }
+  .expo-mark::before { content: ''; width: 1px; height: 12px; background: rgba(255,255,255,.46); transition: height .42s cubic-bezier(.16,1,.3,1), background-color .3s ease, box-shadow .3s ease; }
+  .expo-mark.is-active::before { height: 24px; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.35); }
+  .gallery-arrow { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: currentColor; cursor: pointer; opacity: .48; transition: opacity .28s ease, transform .4s cubic-bezier(.16,1,.3,1); }
+  .gallery-arrow svg { display: block; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1px; stroke-linecap: round; stroke-linejoin: round; }
+  .gallery-arrow:hover, .gallery-nav-pro:focus-within .gallery-arrow { opacity: 1; }
+  .gallery-arrow-prev:hover { transform: translateY(-2px); }
+  .gallery-arrow-next:hover { transform: translateY(2px); }
   .gallery-arrow:disabled { opacity: .28; cursor: default; }
-  .gallery-pagination { display: flex; flex-direction: column; align-items: center; gap: 11px; }
-  .gallery-dots { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-  .gallery-dot { width: 30px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; }
-  .gallery-dot::before { content: ''; width: 2px; height: 14px; border-radius: 2px; background: rgba(255, 255, 255, .35); transition: height .4s cubic-bezier(.2,.8,.2,1), background-color .4s cubic-bezier(.2,.8,.2,1), box-shadow .4s cubic-bezier(.2,.8,.2,1); }
-  .gallery-dot.is-active::before { height: 28px; background: #fff; box-shadow: 0 0 10px rgba(255,255,255,.35); }
-  .gallery-count { color: #fff; font: 400 9px 'Inter Tight',sans-serif; letter-spacing: .15em; white-space: nowrap; text-shadow: 0 1px 8px rgba(0,0,0,.35); }
-  .gallery-arrow:focus-visible, .gallery-dot:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .gallery-arrow:focus-visible, .expo-mark:focus-visible { outline: 1px solid #fff; outline-offset: 2px; }
   .art-caption { position: absolute; right: 14px; bottom: 12px; color: rgba(25, 27, 27, .62); font: 11px 'Noto Sans JP', sans-serif; writing-mode: vertical-rl; }
   @media (pointer: coarse) { .detail-art.has-gallery .gallery-nav-pro { opacity: .88; } }
   @media (max-width: 767px) {
@@ -473,13 +529,12 @@
     .detail-inner { min-height: 100svh; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 22px; padding: 84px 20px 40px; }
     .detail-art { grid-row: 1; grid-column: 1; min-height: 42svh; height: 42svh; }
     .detail-art svg { width: min(100%, 474px); height: 42svh; }
-    .gallery-nav-pro { left: 10px; gap: 8px; }
+    .gallery-nav-pro { left: 6px; gap: 5px; }
     .gallery-arrow { width: 44px; height: 44px; }
-    .gallery-arrow svg { width: 14px; height: 14px; }
-    .gallery-pagination { gap: 8px; }
-    .gallery-dots { gap: 2px; }
-    .gallery-dot { width: 44px; height: 44px; }
-    .gallery-count { font-size: 8px; }
+    .expo-readout { gap: 6px; }
+    .expo-progress { gap: 2px; }
+    .expo-mark { width: 44px; height: 36px; }
+    .expo-num, .expo-total { font-size: 9px; }
     .detail-copy { grid-row: 2; grid-column: 1; justify-content: flex-start; }
     .detail-close { position: fixed; z-index: 70; top: 10px; left: 12px; min-height: 44px; margin: 0; padding: 0 12px; border: 1px solid rgba(25, 27, 27, .14); border-radius: 999px; background: rgba(244, 242, 237, .94); box-shadow: 0 4px 16px rgba(25, 27, 27, .06); }
     #detail-title { font-size: 44px; }
