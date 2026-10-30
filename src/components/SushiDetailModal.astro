@@ -192,10 +192,23 @@
       });
     };
 
-    const slideHeight = 720;
-    const slideStep = 736;
-    const stageCenterY = 90;
+    // Equivalente nativo a Swiper vertical: loop y peek de 1.25 slides sin dependencia externa.
+    const expoSliderConfig = {
+      direction: 'vertical',
+      loop: true,
+      centeredSlides: true,
+      slidesPerView: 1.25,
+      speed: 800,
+      spaceBetween: 16,
+    } as const;
+    const viewBoxHeight = 900;
+    const slideHeight = viewBoxHeight / expoSliderConfig.slidesPerView;
+    const slideStep = slideHeight + expoSliderConfig.spaceBetween;
+    const stageCenterY = (viewBoxHeight - slideHeight) / 2;
     const svgNamespace = 'http://www.w3.org/2000/svg';
+    const wrapGalleryIndex = (index: number) => expoSliderConfig.loop
+      ? ((index % galleryImages.length) + galleryImages.length) % galleryImages.length
+      : Math.max(0, Math.min(galleryImages.length - 1, index));
 
     const setGalleryTrack = (track: SVGGElement, activeIndex: number) => {
       track.replaceChildren();
@@ -204,10 +217,10 @@
       track.style.transformBox = 'view-box';
       track.style.transformOrigin = 'top center';
 
-      // Prev/next sit behind the active card; 720 of 900 viewBox units gives 1.25 slides per view.
+      // Prev/next sit behind the active card; the center uses 1 / slidesPerView of the viewport.
       const slots = [-1, 1, 0] as const;
       slots.forEach((slot) => {
-        const imageIndex = ((activeIndex + slot) % galleryImages.length + galleryImages.length) % galleryImages.length;
+        const imageIndex = wrapGalleryIndex(activeIndex + slot);
         const slide = document.createElementNS(svgNamespace, 'g');
         const isActive = slot === 0;
         const scale = isActive ? 1 : .88;
@@ -346,7 +359,7 @@
 
     const showGalleryImage = (index: number, draggedOffset = 0) => {
       if (!isOpen || galleryImages.length < 2) return;
-      const next = ((index % galleryImages.length) + galleryImages.length) % galleryImages.length;
+      const next = wrapGalleryIndex(index);
       if (next === galleryIndex) return;
       const rawDelta = next - galleryIndex;
       const direction = rawDelta > galleryImages.length / 2 ? -1 : rawDelta < -galleryImages.length / 2 ? 1 : Math.sign(rawDelta);
@@ -360,7 +373,7 @@
       galleryReveal.style.opacity = '1';
       renderGalleryDots(next, direction);
       const expoStyles = getComputedStyle(galleryArt);
-      const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : Number.parseFloat(expoStyles.getPropertyValue('--expo-duration')) || 800;
+      const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : Number.parseFloat(expoStyles.getPropertyValue('--expo-duration')) || expoSliderConfig.speed;
       const easing = expoStyles.getPropertyValue('--expo-ease').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
       const outgoing = galleryBase.animate([
         { transform: `translateY(${stageCenterY + draggedOffset}px)`, opacity: 1 },
