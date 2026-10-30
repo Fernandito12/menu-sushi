@@ -1,6 +1,8 @@
 ---
 import { sushiData } from '../data/sushiData';
 import SushiDetailModal from './SushiDetailModal.astro';
+const initialIndex = Math.max(0, sushiData.findIndex((item) => item.id === 'otoro-nigiri'));
+const initialItem = sushiData[initialIndex] ?? sushiData[0];
 const tapes = Array.from({ length: 3 }, (_, turn) => sushiData.map((item, index) => ({ item, index: turn * sushiData.length + index })) ).flat();
 const categories = [
   { label: 'TODOS / すべて', value: 'all' },
@@ -20,7 +22,7 @@ const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
 const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUrl: string) =>
   `${cropStyle(crop)};--card-image:url("${imageUrl}")`;
 ---
-<section class="shelf-section" aria-label="Menú interactivo de TAKUMI OMAKASE">
+<section class="shelf-section" aria-label="Menú interactivo de TAKUMI OMAKASE" data-initial-index={initialIndex} data-initial-category={initialItem.category}>
   <header class="topbar">
     <a class="brand" href="#menu" aria-label="Takumi Omakase, inicio">
       <span class="brand-name">TAKUMI OMAKASE</span><span class="brand-kanji" lang="ja">匠</span>
@@ -40,7 +42,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     <div class="shelf-section__viewport">
       <div class="stage">
         {tapes.map(({ item, index }) => (
-          <article class="tape" data-index={index} data-id={item.id} data-category={item.category} data-title={item.title} data-title-es={item.titleEs} data-romaji={item.romaji} data-kanji={item.kanji} data-price={item.price} data-image={item.images[0]} data-images={JSON.stringify(item.images)} data-synopsis={item.synopsis} data-ingredients={item.ingredients.join(' · ')} data-allergens={item.allergens.join('|')} data-sake-pairing={item.sakePairing} tabindex={index === 0 ? 0 : -1} role="button" style={`--i:${index};--turn:${Math.floor(index / sushiData.length)};`} aria-label={`${item.title}, $${item.price} MXN`}>
+          <article class="tape" data-index={index} data-id={item.id} data-category={item.category} data-title={item.title} data-title-es={item.titleEs} data-romaji={item.romaji} data-kanji={item.kanji} data-price={item.price} data-image={item.images[0]} data-images={JSON.stringify(item.images)} data-synopsis={item.synopsis} data-ingredients={item.ingredients.join(' · ')} data-allergens={item.allergens.join('|')} data-sake-pairing={item.sakePairing} tabindex={index === initialIndex ? 0 : -1} role="button" style={`--i:${index};--turn:${Math.floor(index / sushiData.length)};`} aria-label={`${item.title}, $${item.price} MXN`}>
             <div class="sp spine" style={faceStyle(item.spineCrop, item.images[0])} aria-hidden="true">
               <span class="sp-title">{item.title}</span><span class="sp-kanji" lang="ja">{item.kanji}</span>
             </div>
@@ -60,9 +62,9 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     <p class="stage-hint">ELIGE UNA PIEZA <span>✳</span> 12 ESPECIALIDADES</p>
     <div class="caption-mask" data-caption aria-live="polite" aria-atomic="true">
       <div class="caption-content">
-        <h2 class="caption-title">{sushiData[0].titleEs}</h2>
-        <p class="caption-subtitle">{sushiData[0].romaji} <span lang="ja">{sushiData[0].kanji}</span></p>
-        <p class="caption-price">${sushiData[0].price} <small>MXN</small></p>
+        <h2 class="caption-title">{initialItem.titleEs}</h2>
+        <p class="caption-subtitle">{initialItem.romaji} <span lang="ja">{initialItem.kanji}</span></p>
+        <p class="caption-price">${initialItem.price} <small>MXN</small></p>
       </div>
     </div>
   </main>
@@ -80,6 +82,8 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   const shelf = document.querySelector<HTMLElement>('.shelf-section');
   const stage = shelf?.querySelector<HTMLElement>('.stage');
   const cards = Array.from(shelf?.querySelectorAll<HTMLElement>('.tape') ?? []);
+  const initialIndex = Number(shelf?.dataset.initialIndex ?? 0);
+  const initialCategory = shelf?.dataset.initialCategory ?? '';
   const tabs = Array.from(shelf?.querySelectorAll<HTMLButtonElement>('.category') ?? []);
   const categoryNav = shelf?.querySelector<HTMLElement>('.category-nav');
 
@@ -126,8 +130,8 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     shelf.style.setProperty('--ws', `${ws}px`);
     shelf.style.setProperty('--d', `${d}px`);
 
-    let s = 0;
-    let T = 0;
+    let s = initialIndex;
+    let T = initialIndex;
     let lastTime = 0;
     let cursorX = window.innerWidth / 2;
     let cursorY = window.innerHeight / 2;
@@ -138,7 +142,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     let isOpen = false;
     let cursorReturnStart = 0;
     let cursorReturnFrom = 1;
-    let lastCaptionIndex = 0;
+    let lastCaptionIndex = initialIndex;
     let pointerStartX = 0;
     let pointerStartT = 0;
     let dragging = false;
@@ -151,7 +155,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     let inertiaActive = false;
     let frame = 0;
     let lastWatermarkCategory = '';
-    let lastActiveCategory = '';
+    let lastActiveCategory = initialCategory;
     let pendingTabValue: string | null = null;
     let pendingTargetCategory: string | null = null;
 
@@ -323,7 +327,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       }
 
       const activeCaptionIndex = mod(Math.round(s), count);
-      const activeCategory = sushiData[mod(Math.round(s), sushiData.length)]?.category ?? 'specials';
+      const activeCategory = cards[activeCaptionIndex]?.dataset.category ?? 'specials';
       if (pendingTabValue && activeCategory === pendingTargetCategory) {
         setActiveTab(pendingTabValue);
         pendingTabValue = null;

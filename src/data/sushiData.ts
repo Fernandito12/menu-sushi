@@ -238,13 +238,13 @@ const sushiCatalog: SushiItem[] = [
 ];
 
 const categorySequence: SushiItem['id'][] = [
+  // Orden de la estantería original: Otoro abre el home como en la referencia.
+  'dragon-roll', 'otoro-nigiri', 'unagi-foie-gras', 'aburi-salmon', 'spicy-tuna-roll',
+  'yellowtail-sashimi', 'tempura-king-prawn', 'sea-urchin-gunkan', 'a5-wagyu-nigiri',
+  'soft-shell-crab', 'scallop-sashimi', 'ceremonial-matcha',
+  // El catálogo ampliado sigue disponible después de la secuencia original.
   'edamame-steamed', 'pork-gyoza', 'agedashi-tofu', 'edamame-spicy',
-  'otoro-nigiri', 'aburi-salmon', 'sea-urchin-gunkan', 'a5-wagyu-nigiri',
-  'dragon-roll', 'spicy-tuna-roll', 'soft-shell-crab',
-  'yellowtail-sashimi', 'scallop-sashimi',
-  'unagi-foie-gras', 'tempura-king-prawn',
-  'junmai-daiginjo-sake', 'sapporo-beer', 'iced-matcha', 'ceremonial-matcha',
-  'matcha-mochi', 'black-sesame-ice-cream',
+  'junmai-daiginjo-sake', 'sapporo-beer', 'iced-matcha', 'matcha-mochi', 'black-sesame-ice-cream',
 ];
 
 const itemById = new Map(sushiCatalog.map((item) => [item.id, item]));
