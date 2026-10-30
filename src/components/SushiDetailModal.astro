@@ -9,14 +9,12 @@
       <div class="detail-line" data-detail-line><div class="detail-badges" data-badges></div></div>
       <div class="detail-line" data-detail-line><h1 id="detail-title" data-field="title">Rollo dragón</h1></div>
       <div class="detail-line" data-detail-line><p class="detail-price"><span data-field="price">$245</span> <small>MXN</small></p></div>
-      <div class="detail-line" data-detail-line><p class="detail-description" data-field="synopsis">Anguila glaseada y aguacate sobre un rollo crujiente, con dulzor ahumado y umami largo.</p></div>
+      <div class="detail-line" data-detail-line>
+        <p class="detail-description" data-field="synopsis">Anguila glaseada y aguacate sobre un rollo crujiente, con dulzor ahumado y umami largo.</p>
+        <span class="cta-trigger-anchor" data-cta-trigger aria-hidden="true"></span>
+      </div>
       <div class="detail-line" data-detail-line><p class="detail-ingredients"><span>INGREDIENTES</span><b data-field="ingredients">Anguila · aguacate · arroz</b></p></div>
       <div class="detail-line" data-detail-line><div class="sake-copy"><span>MARIDAJE DE SAKE</span><p data-field="sake">Junmai ginjo frío · notas de pera y arroz.</p></div></div>
-      <div class="detail-line detail-action-line" data-detail-line>
-        <button class="detail-order cta-btn" type="button" data-order>
-          <span data-order-label>AÑADIR AL PEDIDO <i lang="ja">注文する</i></span><b aria-hidden="true">↗</b>
-        </button>
-      </div>
     </section>
 
     <div class="detail-art modal-gallery" aria-label="Fotografías del platillo">
@@ -40,6 +38,12 @@
       <span class="art-caption" lang="ja">季節の一皿</span>
     </div>
   </div>
+  <button class="detail-order cta-btn" type="button" data-order aria-label="Añadir platillo al pedido">
+    <span class="detail-order-symbol" data-order-symbol aria-hidden="true">注文</span>
+    <span class="detail-order-price" data-order-price>$185</span>
+    <span class="detail-order-label" data-order-label>AÑADIR AL PEDIDO <i lang="ja">注文する</i></span>
+    <b class="detail-order-arrow" aria-hidden="true">↗</b>
+  </button>
 </div>
 
 <script>
@@ -65,6 +69,9 @@
   const closeButton = modal?.querySelector<HTMLButtonElement>('[data-close]');
   const orderButton = modal?.querySelector<HTMLButtonElement>('[data-order]');
   const orderLabel = modal?.querySelector<HTMLElement>('[data-order-label]');
+  const orderSymbol = modal?.querySelector<HTMLElement>('[data-order-symbol]');
+  const orderPrice = modal?.querySelector<HTMLElement>('[data-order-price]');
+  const ctaAnchor = modal?.querySelector<HTMLElement>('[data-cta-trigger]');
   const galleryArt = modal?.querySelector<HTMLElement>('.detail-art');
   const swiperElement = modal?.querySelector<HTMLElement>('[data-gallery-swiper]');
   const galleryWrapper = modal?.querySelector<HTMLElement>('[data-gallery-wrapper]');
@@ -78,7 +85,7 @@
     entradas: 'Entradas', nigiri: 'Nigiri', maki: 'Maki', sashimi: 'Sashimi', specials: 'Especiales', bebidas: 'Bebidas', postres: 'Postres',
   };
 
-  if (modal && inner && closeButton && orderButton && galleryArt && swiperElement && galleryWrapper && galleryDots && galleryCounter && galleryTotal && previousPhotoButton && nextPhotoButton) {
+  if (modal && inner && closeButton && orderButton && orderLabel && orderSymbol && orderPrice && ctaAnchor && galleryArt && swiperElement && galleryWrapper && galleryDots && galleryCounter && galleryTotal && previousPhotoButton && nextPhotoButton) {
     let isOpen = false;
     let activeDish: DishDetail | null = null;
     let origin: DetailOrigin | null = null;
@@ -96,6 +103,14 @@
     let inkRequest = 0;
     let galleryId = 0;
     let previousCounterIndex = -1;
+    let orderCloseTimer = 0;
+
+    const ctaObserver = new IntersectionObserver((entries) => {
+      if (!isOpen) return;
+      const anchorEntry = entries.find((entry) => entry.target === ctaAnchor);
+      if (anchorEntry) orderButton.classList.toggle('is-expanded', anchorEntry.isIntersecting);
+    }, { root: modal, rootMargin: '0px 0px -12% 0px', threshold: 0 });
+    ctaObserver.observe(ctaAnchor);
 
     const setField = (field: string, value: string) => {
       const target = modal.querySelector<HTMLElement>(`[data-field="${field}"]`);
@@ -329,12 +344,19 @@
       setField('title', payload.dish.titleEs); setField('price', `$${payload.dish.price}`);
       setField('synopsis', payload.dish.synopsis); setField('ingredients', payload.dish.ingredients); setField('sake', payload.dish.sakePairing);
       setBadges(payload.dish); setGalleryImages(payload.dish.images);
-      if (orderLabel) orderLabel.innerHTML = 'AÑADIR AL PEDIDO <i lang="ja">注文する</i>';
+      window.clearTimeout(orderCloseTimer);
+      orderButton.disabled = false;
+      orderButton.classList.remove('is-added', 'is-expanded');
+      orderSymbol.textContent = '注文';
+      orderPrice.textContent = `$${payload.dish.price}`;
+      orderLabel.innerHTML = 'AÑADIR AL PEDIDO / <i lang="ja">注文する</i>';
+      orderButton.setAttribute('aria-label', `Añadir ${payload.dish.titleEs} al pedido`);
       previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden'; document.body.classList.add('detail-open');
       modal.classList.add('is-open'); isOpen = true;
       window.dispatchEvent(new CustomEvent('takumi:detail-state', { detail: { isOpen } }));
       modal.setAttribute('aria-hidden', 'false'); modal.style.visibility = 'visible'; modal.style.pointerEvents = 'auto';
+      ctaObserver.unobserve(ctaAnchor); ctaObserver.observe(ctaAnchor);
       modal.style.clipPath = 'inset(0 round 8px)'; modal.style.transform = 'rotate(-4.5deg)'; modal.style.transformOrigin = 'center center';
       setActiveBounds(payload.origin); inner.style.opacity = '0';
       revealActiveInk(); revealText();
@@ -352,8 +374,10 @@
 
     const closeDetail = async () => {
       if (!modal.classList.contains('is-open') || !origin) return;
+      window.clearTimeout(orderCloseTimer); orderCloseTimer = 0;
       const sequence = ++transition;
       isOpen = false; cancelAnimationFrame(inkFrame); inkRequest++;
+      orderButton.classList.remove('is-expanded');
       window.dispatchEvent(new CustomEvent('takumi:detail-state', { detail: { isOpen } }));
       const currentRect = modal.getBoundingClientRect();
       const currentTransform = getComputedStyle(modal).transform;
@@ -385,15 +409,17 @@
     }, { passive: false });
     modal.addEventListener('click', (event) => { if (event.target === modal) void closeDetail(); });
     orderButton.addEventListener('click', () => {
-      if (!activeDish) return;
+      if (!activeDish || orderButton.disabled) return;
       window.dispatchEvent(new CustomEvent('takumi:add-to-order', { detail: activeDish }));
-      if (orderLabel) {
-        orderLabel.textContent = '¡AGREGADO! / 追加されました'; orderButton.classList.add('is-added');
-        window.setTimeout(() => {
-          if (!orderLabel.isConnected) return;
-          orderLabel.innerHTML = 'AÑADIR AL PEDIDO <i lang="ja">注文する</i>'; orderButton.classList.remove('is-added');
-        }, 1500);
-      }
+      orderButton.disabled = true;
+      orderButton.classList.add('is-added');
+      orderSymbol.textContent = '✓';
+      orderLabel.innerHTML = '¡AGREGADO! / <i lang="ja">追加されました</i>';
+      orderButton.setAttribute('aria-label', 'Platillo agregado al pedido');
+      orderCloseTimer = window.setTimeout(() => {
+        orderCloseTimer = 0;
+        void closeDetail();
+      }, 650);
     });
     window.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && modal.classList.contains('is-open')) { event.preventDefault(); void closeDetail(); }
@@ -423,11 +449,24 @@
   .detail-ingredients b { font-weight: 500; }
   .sake-copy { margin: 0 0 28px; padding-left: 14px; border-left: 1px solid var(--cobalt); }
   .sake-copy p { max-width: 480px; margin: 6px 0 0; color: #4c4e4a; font: 400 14px/1.45 'Newsreader', serif; }
-  .detail-order { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 36px; padding: 0 18px; border: 1px solid var(--cobalt); background: var(--cobalt); color: white; cursor: pointer; font: 500 10px 'Inter Tight', sans-serif; letter-spacing: .1em; }
-  .detail-order i { margin-left: 8px; }
-  .detail-order.is-added { background: #1F3FB0; border-color: #1F3FB0; transform: scale(1.025); }
-  .detail-order { transition: background-color .25s ease, border-color .25s ease, transform .35s cubic-bezier(.2,.72,.18,1); }
-  .detail-order b { font: 400 16px 'Inter Tight', sans-serif; }
+  .cta-trigger-anchor { display: block; width: 100%; height: 1px; margin-top: 2px; }
+  .detail-order { position: fixed; z-index: 50; right: 24px; bottom: max(24px, env(safe-area-inset-bottom)); left: auto; width: 52px; height: 52px; min-height: 52px; display: flex; align-items: center; justify-content: center; padding: 0; overflow: visible; border: 1px solid rgba(255,255,255,.3); border-radius: 50%; background: rgba(31,63,176,.88); color: #fff; box-shadow: 0 12px 32px rgba(20,16,10,.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); cursor: pointer; font: 500 10px 'Inter Tight', sans-serif; letter-spacing: .1em; transition: all .5s cubic-bezier(.16,1,.3,1); animation: pulseGlow 3s infinite ease-in-out; }
+  .detail-order-symbol { display: grid; place-items: center; color: #fff; font: 500 13px/1 'Noto Sans JP', sans-serif; transition: transform .35s cubic-bezier(.16,1,.3,1), opacity .25s ease; }
+  .detail-order-price { position: absolute; top: -7px; right: -9px; display: inline-flex; align-items: baseline; gap: 2px; padding: 4px 6px; border: 1px solid rgba(255,255,255,.72); border-radius: 999px; background: #F7F4EF; color: #1F3FB0; box-shadow: 0 3px 10px rgba(20,16,10,.14); font: 600 8px/1 'Inter Tight',sans-serif; letter-spacing: .02em; white-space: nowrap; transition: opacity .2s ease, transform .3s ease; }
+  .detail-order-price small { font-size: 6px; opacity: .7; }
+  .detail-order-label, .detail-order-arrow { position: absolute; opacity: 0; visibility: hidden; transform: translateY(5px); transition: opacity .3s ease .06s, transform .4s cubic-bezier(.16,1,.3,1), visibility .3s; }
+  .detail-order-label { left: 18px; right: 52px; display: block; text-align: left; white-space: nowrap; }
+  .detail-order-label i { margin-left: 6px; font: 12px 'Noto Sans JP',sans-serif; font-style: normal; letter-spacing: 0; }
+  .detail-order-arrow { right: 18px; font: 400 17px 'Inter Tight',sans-serif; }
+  .detail-order.is-expanded { right: 24px; left: 24px; width: calc(100% - 48px); height: 56px; min-height: 56px; justify-content: flex-start; padding: 0 18px; border-radius: 12px; animation: none; }
+  .detail-order.is-expanded .detail-order-symbol { margin-right: 12px; }
+  .detail-order.is-expanded .detail-order-label, .detail-order.is-expanded .detail-order-arrow { position: static; opacity: 1; visibility: visible; transform: translateY(0); }
+  .detail-order.is-expanded .detail-order-label { flex: 1; }
+  .detail-order.is-expanded .detail-order-arrow { margin-left: auto; }
+  .detail-order.is-expanded .detail-order-price { opacity: 0; transform: translateY(-4px); pointer-events: none; }
+  .detail-order.is-added { background: #17348f; border-color: rgba(255,255,255,.72); animation: none; }
+  .detail-order:disabled { cursor: default; }
+  @keyframes pulseGlow { 0%,100% { box-shadow: 0 12px 32px rgba(20,16,10,.2), 0 0 0 rgba(31,63,176,0); } 50% { box-shadow: 0 12px 32px rgba(20,16,10,.2), 0 0 20px rgba(31,63,176,.24); } }
   .detail-close:focus-visible, .detail-order:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 4px; }
   .detail-art { --expo-ease: cubic-bezier(0.16, 1, 0.3, 1); position: relative; min-width: 0; height: min(82vh, 900px); min-height: 0; display: grid; place-items: center; }
   .detail-art { touch-action: pan-x; }
@@ -572,24 +611,11 @@
     .detail-ingredients { gap: 5px; margin: 0; }
     .sake-copy { margin: 0; }
     .sake-copy p { max-width: none; }
-    .detail-action-line {
-      position: static;
-      z-index: auto;
-      margin-top: 12px;
-      margin-bottom: 0;
-      padding: 0 0 4px;
-      overflow: visible !important;
-      background: none;
-    }
-    .detail-order {
-      position: static;
-      width: 100%;
-      min-height: 56px;
-      margin: 0;
-    }
+    .detail-order { right: 24px; bottom: max(24px, env(safe-area-inset-bottom)); left: auto; width: 52px; height: 52px; min-height: 52px; }
+    .detail-order.is-expanded { right: 24px; left: 24px; width: calc(100% - 48px); height: 56px; min-height: 56px; }
     .art-caption { right: 10px; bottom: 10px; color: rgba(25, 27, 27, .72); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .detail-close, .detail-order { transition: none; }
+    .detail-close, .detail-order { transition: none; animation: none; }
   }
 </style>
