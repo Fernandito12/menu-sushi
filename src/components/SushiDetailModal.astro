@@ -51,6 +51,7 @@
   import EffectCreative from '../../nolimits4web-swiper-e043db5/src/modules/effect-creative/effect-creative.ts';
   import Navigation from '../../nolimits4web-swiper-e043db5/src/modules/navigation/navigation.ts';
   import Pagination from '../../nolimits4web-swiper-e043db5/src/modules/pagination/pagination.ts';
+  import Mousewheel from '../../nolimits4web-swiper-e043db5/src/modules/mousewheel/mousewheel.ts';
   import '../../nolimits4web-swiper-e043db5/src/swiper.css';
   import '../../nolimits4web-swiper-e043db5/src/modules/effect-creative/effect-creative.css';
   import '../../nolimits4web-swiper-e043db5/src/modules/navigation/navigation.css';
@@ -97,7 +98,6 @@
     let galleryImages: string[] = [];
     let galleryIndex = 0;
     let gallerySwiper: GallerySwiper | null = null;
-    let wheelLockedUntil = 0;
     let counterAnimation: Animation | null = null;
     let textAnimations: Animation[] = [];
     let inkRequest = 0;
@@ -267,15 +267,6 @@
       inkFrame = requestAnimationFrame(draw);
     };
 
-    const updateProgress = (swiper: GallerySwiper) => {
-      swiper.slides.forEach((slide) => {
-        const progress = slide.progress ?? 0;
-        const distance = Math.abs(progress);
-        const img = slide.querySelector<SVGImageElement>('.swiper-slide-img');
-        if (img) img.style.transform = `scale(${1 + distance * .15}) translateY(${progress * 10}%)`;
-      });
-    };
-
     const setGalleryImages = (images: string[]) => {
       galleryImages = images.filter(Boolean);
       if (!galleryImages.length) galleryImages = [''];
@@ -290,16 +281,18 @@
       nextPhotoButton.disabled = galleryImages.length < 2;
       galleryDots.setAttribute('aria-label', `Elegir entre ${galleryImages.length} fotografías`);
       gallerySwiper = new Swiper(swiperElement, {
-        modules: [EffectCreative, Navigation, Pagination],
-        direction: 'vertical', loop: galleryImages.length > 1, speed: 800,
-        grabCursor: true, centeredSlides: true, slidesPerView: 1.25, spaceBetween: 16,
+        modules: [EffectCreative, Navigation, Pagination, Mousewheel],
+        direction: 'vertical', loop: galleryImages.length > 1, speed: 700,
+        grabCursor: true, centeredSlides: true, slidesPerView: 1,
         watchSlidesProgress: true, touchRatio: 1.2, resistanceRatio: .85,
         effect: 'creative',
         creativeEffect: {
-          limitProgress: 1,
-          prev: { translate: [0, '-85%', -100], scale: .88, opacity: .38 },
-          next: { translate: [0, '85%', -100], scale: .88, opacity: .38 },
+          limitProgress: 2,
+          shadowPerProgress: false,
+          prev: { translate: [0, '-100%', -100], scale: .88, opacity: .38 },
+          next: { translate: [0, '100%', -100], scale: .88, opacity: .38 },
         },
+        mousewheel: { forceToAxis: true },
         navigation: { prevEl: previousPhotoButton, nextEl: nextPhotoButton },
         pagination: {
           el: galleryDots, clickable: true, bulletClass: 'expo-mark', bulletActiveClass: 'is-active',
@@ -308,18 +301,7 @@
           },
         },
         on: {
-          init(swiper) { updateProgress(swiper); updateCounter(swiper.realIndex); },
-          progress(swiper) { updateProgress(swiper); },
-          setTranslate(swiper) { updateProgress(swiper); },
-          setTransition(swiper, duration) {
-            swiper.slides.forEach((slide) => {
-              slide.style.transitionDuration = `${duration}ms`;
-              const card = slide.querySelector<HTMLElement>('.swiper-slide-card');
-              const img = slide.querySelector<SVGImageElement>('.swiper-slide-img');
-              if (card) card.style.transitionDuration = `${duration}ms`;
-              if (img) img.style.transitionDuration = `${duration}ms`;
-            });
-          },
+          init(swiper) { updateCounter(swiper.realIndex); },
           slideChange(swiper) {
             galleryIndex = swiper.realIndex;
             updateCounter(galleryIndex);
@@ -399,14 +381,6 @@
     };
 
     closeButton.addEventListener('click', () => void closeDetail());
-    galleryArt.addEventListener('wheel', (event) => {
-      const wheel = event as WheelEvent;
-      if (Math.abs(wheel.deltaY) < Math.abs(wheel.deltaX) || Math.abs(wheel.deltaY) < 18) return;
-      const now = performance.now();
-      if (now < wheelLockedUntil) { wheel.preventDefault(); return; }
-      wheel.preventDefault(); wheelLockedUntil = now + 420;
-      if (wheel.deltaY > 0) gallerySwiper?.slideNext(); else gallerySwiper?.slidePrev();
-    }, { passive: false });
     modal.addEventListener('click', (event) => { if (event.target === modal) void closeDetail(); });
     orderButton.addEventListener('click', () => {
       if (!activeDish || orderButton.disabled) return;
@@ -470,13 +444,14 @@
   .detail-close:focus-visible, .detail-order:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 4px; }
   .detail-art { --expo-ease: cubic-bezier(0.16, 1, 0.3, 1); position: relative; min-width: 0; height: min(82vh, 900px); min-height: 0; display: grid; place-items: center; }
   .detail-art { touch-action: pan-x; }
-  :global(.modal-gallery-swiper) { --swiper-wrapper-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); position: absolute; inset: 0; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; overflow: hidden; background: #e5dfd3; }
-  :global(.modal-gallery-swiper .swiper-wrapper) { height: 100%; align-items: center; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
-  :global(.modal-gallery-swiper .swiper-slide) { display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; min-height: 0; overflow: hidden; border-radius: 16px; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d; will-change: transform, opacity; }
+  .modal-gallery { position: relative; width: 100%; height: 320px; min-height: 0; border-radius: 20px; overflow: hidden; background: #EAE6DF; }
+  :global(.modal-gallery-swiper) { --swiper-wrapper-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); position: absolute; inset: 0; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; overflow: hidden; background: #EAE6DF; }
+  :global(.modal-gallery-swiper .swiper-wrapper) { width: 100% !important; height: 100% !important; margin: 0 !important; box-sizing: border-box !important; align-items: center; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  :global(.modal-gallery-swiper .swiper-slide) { display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; height: 100% !important; margin: 0 !important; box-sizing: border-box !important; overflow: hidden; border-radius: 16px; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d; will-change: transform, opacity; }
   :global(.swiper-slide-card) { width: 100%; height: 100%; overflow: hidden; border-radius: 16px; transform: scale(1); transform-origin: center; will-change: transform, opacity; transition-property: transform, opacity; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
   :global(.swiper-slide-card svg) { display: block; width: 100%; height: 100%; overflow: hidden; }
   :global(.swiper-slide-img) { display: block; width: 100% !important; height: 100% !important; object-fit: cover !important; object-position: center !important; overflow: hidden; will-change: transform; transform-origin: center; transition-property: transform; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
-  .gallery-nav-pro { position: absolute; z-index: 30 !important; left: 16px; top: 50%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; transform: translateY(-50%); pointer-events: auto; border-radius: 20px; background: rgba(247, 244, 239, .4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #fff; opacity: .52; transition: opacity .4s ease; }
+  .gallery-nav-pro { position: absolute; z-index: 20 !important; left: 16px; top: 50%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; transform: translateY(-50%); pointer-events: auto; border-radius: 20px; background: rgba(247, 244, 239, .4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #fff; opacity: .52; transition: opacity .4s ease; }
   .gallery-nav-pro:hover, .gallery-nav-pro:focus-within { opacity: .96; }
   .expo-rail { position: absolute; z-index: -1; top: 57px; bottom: 57px; left: 50%; width: 1px; transform: translateX(-50%); background: rgba(255,255,255,.2); pointer-events: none; }
   .expo-readout { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.38); }
@@ -531,13 +506,12 @@
       order: 1;
       position: relative;
       width: 100%;
-      height: min(42vh, 320px);
-      height: min(42svh, 320px);
+      height: 320px;
       min-height: 0;
       flex: 0 0 auto;
       margin: 0 0 24px;
       overflow: hidden;
-      border-radius: 16px;
+      border-radius: 20px;
       background: #EAE6DF;
       isolation: isolate;
     }
@@ -549,10 +523,9 @@
       height: 100%;
       overflow: hidden;
     }
-    :global(.modal-gallery-swiper .swiper-slide) { height: calc((100% - 16px) / 1.25); }
     .modal-gallery .gallery-sidebar {
       left: 16px;
-      z-index: 30 !important;
+      z-index: 20 !important;
       top: 50%;
       height: auto !important;
       max-height: 80%;
