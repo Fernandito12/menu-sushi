@@ -1,6 +1,6 @@
-<div class="detail-modal modal-content-scroll" role="dialog" aria-modal="true" aria-labelledby="detail-title" aria-hidden="true" tabindex="-1">
-  <div class="detail-inner">
-    <section class="detail-copy modal-info" aria-label="Detalle del platillo">
+<div class="detail-modal modal-content-scroll" role="dialog" aria-modal="true" aria-labelledby="detail-title" aria-owns="detail-order-cta" aria-hidden="true" tabindex="-1">
+  <div class="detail-inner modal-container">
+    <section class="detail-copy modal-info modal-info-col" aria-label="Detalle del platillo">
       <button class="detail-close close-btn" type="button" data-close>
         <span>CERRAR / <i lang="ja">閉じる</i></span><b aria-hidden="true">×</b>
       </button>
@@ -14,9 +14,22 @@
       </div>
       <div class="detail-line" data-detail-line><p class="detail-ingredients"><span>INGREDIENTES</span><b data-field="ingredients">Anguila · aguacate · arroz</b></p></div>
       <div class="detail-line" data-detail-line><div class="sake-copy"><span>MARIDAJE DE SAKE</span><p data-field="sake">Junmai ginjo frío · notas de pera y arroz.</p></div></div>
+      <button id="detail-order-cta" class="detail-order floating-cta cta-btn" type="button" data-order aria-label="Añadir platillo al pedido">
+        <span class="detail-order-symbol" aria-hidden="true">
+          <svg class="kinchaku-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 7.5c.7-1.4 1.9-2.2 4-2.2s3.3.8 4 2.2l1.7 2.1c1.3 1.6 1.8 3 1.4 4.5l-1.5 5.1c-.3 1-1.2 1.6-2.2 1.6H8.6c-1 0-1.9-.6-2.2-1.6l-1.5-5.1c-.4-1.5.1-2.9 1.4-4.5L8 7.5Z" />
+            <path d="M8 7.5c1.2.7 2.5 1.1 4 1.1s2.8-.4 4-1.1M9 5.7c-.6-1.1-.7-2.2-.3-3.2 1.1.5 2.2 1.1 3.3 1.9 1.1-.8 2.2-1.4 3.3-1.9.4 1 .3 2.1-.3 3.2M9.5 11v7m5-7v7m-7.4-5h9.8" />
+          </svg>
+          <span class="detail-order-kanji">注文</span>
+          <span class="detail-order-check">✓</span>
+        </span>
+        <span class="detail-order-price" data-order-price>$185</span>
+        <span class="detail-order-label" data-order-label>AÑADIR AL PEDIDO <i lang="ja">注文する</i></span>
+        <b class="detail-order-arrow" aria-hidden="true">↗</b>
+      </button>
     </section>
 
-    <div class="detail-art modal-gallery" aria-label="Fotografías del platillo">
+    <div class="detail-art modal-gallery modal-gallery-col" aria-label="Fotografías del platillo">
       <div class="swiper modal-gallery-swiper" data-gallery-swiper aria-live="polite">
         <div class="swiper-wrapper" data-gallery-wrapper></div>
       </div>
@@ -39,19 +52,6 @@
   </div>
 <div class="modal-bottom-sentinel" id="modal-bottom-sentinel" data-cta-trigger aria-hidden="true"></div>
 </div>
-<button class="detail-order floating-cta cta-btn" type="button" data-order aria-label="Añadir platillo al pedido">
-    <span class="detail-order-symbol" aria-hidden="true">
-      <svg class="kinchaku-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M8 7.5c.7-1.4 1.9-2.2 4-2.2s3.3.8 4 2.2l1.7 2.1c1.3 1.6 1.8 3 1.4 4.5l-1.5 5.1c-.3 1-1.2 1.6-2.2 1.6H8.6c-1 0-1.9-.6-2.2-1.6l-1.5-5.1c-.4-1.5.1-2.9 1.4-4.5L8 7.5Z" />
-        <path d="M8 7.5c1.2.7 2.5 1.1 4 1.1s2.8-.4 4-1.1M9 5.7c-.6-1.1-.7-2.2-.3-3.2 1.1.5 2.2 1.1 3.3 1.9 1.1-.8 2.2-1.4 3.3-1.9.4 1 .3 2.1-.3 3.2M9.5 11v7m5-7v7m-7.4-5h9.8" />
-      </svg>
-      <span class="detail-order-kanji">注文</span>
-      <span class="detail-order-check">✓</span>
-    </span>
-    <span class="detail-order-price" data-order-price>$185</span>
-    <span class="detail-order-label" data-order-label>AÑADIR AL PEDIDO <i lang="ja">注文する</i></span>
-    <b class="detail-order-arrow" aria-hidden="true">↗</b>
-  </button>
 
 <script>
   import Swiper from '../../nolimits4web-swiper-e043db5/src/swiper.ts';
@@ -78,6 +78,8 @@
   const orderButton = document.querySelector<HTMLButtonElement>('[data-order]');
   const orderLabel = orderButton?.querySelector<HTMLElement>('[data-order-label]');
   const orderPrice = orderButton?.querySelector<HTMLElement>('[data-order-price]');
+  const ctaHomeParent = orderButton?.parentElement ?? null;
+  const ctaHomeNextSibling = orderButton?.nextSibling ?? null;
   const ctaAnchor = modal?.querySelector<HTMLElement>('#modal-bottom-sentinel');
   const modalScrollContainer = modal?.querySelector<HTMLElement>('.modal-scroll-area, .modal-body') ?? modal;
   const galleryArt = modal?.querySelector<HTMLElement>('.detail-art');
@@ -112,11 +114,20 @@
     let previousCounterIndex = -1;
     let orderCloseTimer = 0;
 
+    const isMobileCta = () => window.matchMedia('(max-width: 1023px)').matches;
+    const syncCtaPlacement = () => {
+      if (!ctaHomeParent) return;
+      if (isOpen && isMobileCta()) {
+        if (orderButton.parentElement !== document.body) document.body.append(orderButton);
+      } else if (orderButton.parentElement !== ctaHomeParent) {
+        ctaHomeParent.insertBefore(orderButton, ctaHomeNextSibling?.parentNode === ctaHomeParent ? ctaHomeNextSibling : null);
+      }
+    };
     let ctaSentinelVisible = false;
     const updateCtaExpansion = () => {
       if (!modalScrollContainer) return;
       const isAtScrollEnd = modalScrollContainer.scrollTop + modalScrollContainer.clientHeight >= modalScrollContainer.scrollHeight - 2;
-      orderButton.classList.toggle('is-expanded', isOpen && ctaSentinelVisible && isAtScrollEnd);
+      orderButton.classList.toggle('is-expanded', isOpen && isMobileCta() && ctaSentinelVisible && isAtScrollEnd);
     };
     const ctaObserver = new IntersectionObserver((entries) => {
       const anchorEntry = entries.find((entry) => entry.target === ctaAnchor);
@@ -125,6 +136,7 @@
     }, { root: modalScrollContainer, threshold: 1.0, rootMargin: '0px' });
     ctaObserver.observe(ctaAnchor);
     modalScrollContainer?.addEventListener('scroll', updateCtaExpansion, { passive: true });
+    window.addEventListener('resize', () => { syncCtaPlacement(); updateCtaExpansion(); });
 
     const setField = (field: string, value: string) => {
       const target = modal.querySelector<HTMLElement>(`[data-field="${field}"]`);
@@ -353,6 +365,7 @@
       modal.classList.add('is-open'); isOpen = true;
       window.dispatchEvent(new CustomEvent('takumi:detail-state', { detail: { isOpen } }));
       modal.setAttribute('aria-hidden', 'false'); modal.style.visibility = 'visible'; modal.style.pointerEvents = 'auto';
+      syncCtaPlacement();
       ctaObserver.unobserve(ctaAnchor); ctaObserver.observe(ctaAnchor);
       modal.style.clipPath = 'inset(0 round 8px)'; modal.style.transform = 'rotate(-4.5deg)'; modal.style.transformOrigin = 'center center';
       setActiveBounds(payload.origin); inner.style.opacity = '0';
@@ -390,6 +403,7 @@
       if (sequence !== transition) return;
       animation.cancel(); modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true');
       modal.style.visibility = 'hidden'; modal.style.pointerEvents = 'none';
+      syncCtaPlacement();
       ['inset','left','top','right','bottom','width','height','transform','clip-path'].forEach((property) => modal.style.removeProperty(property));
       inner.style.opacity = '0'; document.body.classList.remove('detail-open'); document.body.style.overflow = previousOverflow;
       textAnimations.forEach((effect) => effect.cancel()); textAnimations = [];
@@ -498,7 +512,7 @@
   .gallery-arrow:focus-visible, .expo-mark:focus-visible { outline: 1px solid #fff; outline-offset: 2px; }
   .art-caption { position: absolute; right: 14px; bottom: 12px; color: rgba(25, 27, 27, .62); font: 11px 'Noto Sans JP', sans-serif; writing-mode: vertical-rl; }
   @media (pointer: coarse) { .detail-art.has-gallery .gallery-nav-pro { opacity: .88; } }
-  @media (max-width: 767px) {
+  @media (max-width: 1023px) {
     .detail-modal {
       position: fixed;
       z-index: 100;
@@ -611,9 +625,21 @@
     .detail-ingredients { gap: 5px; margin: 0; }
     .sake-copy { margin: 0; }
     .sake-copy p { max-width: none; }
-    .floating-cta { right: 24px !important; bottom: max(24px, env(safe-area-inset-bottom)) !important; left: auto !important; z-index: 70 !important; width: 56px; height: 56px; min-height: 56px; }
-    .floating-cta.is-expanded { right: 24px !important; left: auto !important; width: calc(100vw - 48px) !important; height: 52px !important; min-height: 52px; }
+    .floating-cta { right: 20px !important; bottom: max(20px, env(safe-area-inset-bottom)) !important; left: auto !important; z-index: 70 !important; width: 56px; height: 56px; min-height: 56px; }
+    .floating-cta.is-expanded { right: 20px !important; left: auto !important; width: calc(100vw - 40px) !important; height: 52px !important; min-height: 52px; }
     .art-caption { right: 10px; bottom: 10px; color: rgba(25, 27, 27, .72); }
+  }
+  @media (min-width: 1024px) {
+    .detail-modal { overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .detail-inner.modal-container { width: 100%; max-width: 1280px; min-height: 100%; margin: 0 auto; padding: 40px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 48px; align-items: start; box-sizing: border-box; }
+    .modal-info-col { justify-content: flex-start; align-items: stretch; }
+    .modal-gallery-col { height: min(65vh, 520px); align-self: start; }
+    .modal-gallery-col.modal-gallery { height: min(65vh, 520px); }
+    .floating-cta { position: relative !important; inset: auto !important; transform: none !important; width: 100% !important; height: 56px !important; min-height: 56px; margin-top: 32px !important; padding: 0 20px; justify-content: flex-start; border-radius: 14px !important; box-shadow: 0 8px 24px rgba(31, 63, 176, .2) !important; animation: none; }
+    .floating-cta .detail-order-symbol { flex-direction: row; gap: 8px; margin-right: 12px; }
+    .floating-cta .detail-order-kanji, .floating-cta .detail-order-price { display: none !important; }
+    .floating-cta .cta-text, .floating-cta .detail-order-label { position: static; display: flex !important; align-items: center; opacity: 1 !important; visibility: visible; transform: none; }
+    .floating-cta .detail-order-arrow { position: static; margin-left: auto; opacity: 1; visibility: visible; transform: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .detail-close, .detail-order { transition: none; animation: none; }
