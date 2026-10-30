@@ -1,0 +1,56 @@
+<div
+  id="preloader"
+  role="status"
+  aria-live="polite"
+  aria-label="Cargando TAKUMI OMAKASE"
+  style="position: fixed; inset: 0; z-index: 99999; background-color: #F7F4EF; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 1; visibility: visible; transition: opacity 0.8s ease, visibility 0.8s ease;"
+>
+  <div class="preloader-mark" aria-hidden="true">
+    <svg viewBox="0 0 72 72" fill="none">
+      <path class="ink-ring" d="M36 5.5c16.4 0 30 13.5 30 30.1 0 16.4-13.3 30.9-29.9 30.9C19.6 66.5 6 52.9 6 36.5 6 19.7 19.4 5.5 36 5.5Z" />
+      <path class="ink-stroke" d="M22 25h28M22 48h28M28 25l-2 23m10-23v23m10-23 2 23" />
+    </svg>
+  </div>
+  <p class="preloader-name">TAKUMI OMAKASE <span lang="ja">匠</span></p>
+  <span class="preloader-caption" lang="ja">一皿ずつ、心を込めて</span>
+  <div class="preloader-track" aria-hidden="true"><span></span></div>
+</div>
+
+<script>
+  const minDisplayTime = new Promise<void>((resolve) => window.setTimeout(resolve, 1200));
+  const windowLoaded = new Promise<void>((resolve) => {
+    if (document.readyState === 'complete') resolve();
+    else window.addEventListener('load', () => resolve(), { once: true });
+  });
+
+  Promise.all([minDisplayTime, windowLoaded]).then(() => {
+    const preloader = document.getElementById('preloader');
+    if (!preloader) return;
+
+    preloader.style.opacity = '0';
+    preloader.style.visibility = 'hidden';
+    window.setTimeout(() => preloader.remove(), 800);
+  });
+</script>
+
+<style>
+  .preloader-mark { width: 64px; height: 64px; color: #244E8A; }
+  .preloader-mark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .ink-ring, .ink-stroke { stroke: currentColor; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
+  .ink-ring { stroke-dasharray: 190; stroke-dashoffset: 190; animation: ink-draw 1.15s cubic-bezier(.2,.72,.18,1) forwards; }
+  .ink-stroke { opacity: 0; animation: ink-appear .65s .28s ease-out forwards; }
+  .preloader-name { margin: 22px 0 0; color: #191B1B; font: 500 10px 'Inter Tight', sans-serif; letter-spacing: .17em; }
+  .preloader-name span { margin-left: 8px; color: #244E8A; font: 500 14px 'Noto Sans JP', sans-serif; }
+  .preloader-caption { margin-top: 10px; color: rgba(25, 27, 27, .48); font: 10px 'Noto Sans JP', sans-serif; letter-spacing: .08em; }
+  .preloader-track { width: 90px; height: 1px; margin-top: 28px; overflow: hidden; background: rgba(36, 78, 138, .16); }
+  .preloader-track span { display: block; width: 42%; height: 100%; background: #244E8A; animation: track-sweep 1.3s ease-in-out infinite; }
+  @keyframes ink-draw { to { stroke-dashoffset: 0; } }
+  @keyframes ink-appear { to { opacity: .82; } }
+  @keyframes track-sweep { from { transform: translateX(-110%); } to { transform: translateX(340%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ink-ring, .ink-stroke, .preloader-track span { animation: none; }
+    .ink-ring { stroke-dashoffset: 0; }
+    .ink-stroke { opacity: .82; }
+    .preloader-track span { width: 100%; }
+  }
+</style>
