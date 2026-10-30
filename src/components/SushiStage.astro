@@ -1,5 +1,6 @@
 ---
 import { sushiData } from '../data/sushiData';
+import SushiDetailModal from './SushiDetailModal.astro';
 const tapes = Array.from({ length: 3 }, (_, turn) => sushiData.map((item, index) => ({ item, index: turn * sushiData.length + index })) ).flat();
 const categories = ['ALL', 'NIGIRI', 'MAKI', 'SASHIMI', 'SPECIALS'];
 const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
@@ -26,11 +27,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     <div class="shelf-section__viewport">
       <div class="stage">
         {tapes.map(({ item, index }) => (
-          <article class="tape" data-index={index} data-category={item.category} data-title={item.title} data-title-es={item.titleEs} data-romaji={item.romaji} data-kanji={item.kanji} data-price={item.price} data-image={item.imageUrl} style={`--i:${index};--turn:${Math.floor(index / sushiData.length)};`} aria-label={`${item.title}, $${item.price} MXN`}>
+          <article class="tape" data-index={index} data-id={item.id} data-category={item.category} data-title={item.title} data-title-es={item.titleEs} data-romaji={item.romaji} data-kanji={item.kanji} data-price={item.price} data-image={item.imageUrl} data-synopsis={item.synopsis} data-ingredients={item.ingredients.join(' · ')} data-allergens={item.allergens.join('|')} data-sake-pairing={item.sakePairing} tabindex={index === 0 ? 0 : -1} role="button" style={`--i:${index};--turn:${Math.floor(index / sushiData.length)};`} aria-label={`${item.title}, $${item.price} MXN`}>
             <div class="sp spine" style={faceStyle(item.spineCrop, item.imageUrl)} aria-hidden="true">
               <span class="sp-title">{item.title}</span><span class="sp-kanji" lang="ja">{item.kanji}</span>
             </div>
-            <div class="cv" style={faceStyle(item.coverCrop, item.imageUrl)}>
+            <div class="cv" data-cover style={faceStyle(item.coverCrop, item.imageUrl)}>
               <div class="cover-copy">
                 <span class="cover-category">{item.category}</span>
                 <h2>{item.title}</h2>
@@ -59,6 +60,8 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     <span>DESLIZA PARA EXPLORAR <b>↗</b></span>
   </footer>
 </section>
+
+<SushiDetailModal />
 
 <script>
   const shelf = document.querySelector<HTMLElement>('.shelf-section');
@@ -113,7 +116,35 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     let pointerStartX = 0;
     let pointerStartT = 0;
     let dragging = false;
+    let dragMoved = false;
     let frame = 0;
+
+    const dispatchOpenDetail = (card: HTMLElement) => {
+      if (!card.classList.contains('open')) return;
+      const cover = card.querySelector<HTMLElement>('[data-cover]');
+      if (!cover) return;
+      const rect = cover.getBoundingClientRect();
+      window.dispatchEvent(new CustomEvent('takumi:open-detail', {
+        detail: {
+          dish: {
+            id: card.dataset.id ?? '',
+            title: card.dataset.title ?? '',
+            titleEs: card.dataset.titleEs ?? card.dataset.title ?? '',
+            romaji: card.dataset.romaji ?? '',
+            kanji: card.dataset.kanji ?? '',
+            category: card.dataset.category ?? '',
+            price: card.dataset.price ?? '',
+            imageUrl: card.dataset.image ?? '',
+            synopsis: card.dataset.synopsis ?? '',
+            ingredients: card.dataset.ingredients ?? '',
+            allergens: card.dataset.allergens ?? '',
+            sakePairing: card.dataset.sakePairing ?? '',
+          },
+          origin: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+          originCard: card,
+        },
+      }));
+    };
 
     const setCaption = (card: HTMLElement, direction: number) => {
       if (!caption) return;
@@ -211,6 +242,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         const translateZ = active ? 0.2 * cardHeight : 0;
         const rotateZ = active ? -4.5 : 0;
         card.classList.toggle('open', active);
+        card.tabIndex = active ? 0 : -1;
         card.style.transform = `translate3d(${x}px, ${translateY}px, ${translateZ}px) rotateX(${mouseTiltX}deg) rotateY(${rotateY + mouseTiltY}deg) rotateZ(${rotateZ}deg)`;
         card.style.zIndex = String(Math.round(1000 - absR * 10));
 
@@ -236,13 +268,17 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       const pointer = event as PointerEvent;
       if (pointer.button !== 0) return;
       dragging = true;
+      dragMoved = false;
       pointerStartX = pointer.clientX;
       pointerStartT = T;
       viewport.setPointerCapture(pointer.pointerId);
     });
     viewport?.addEventListener('pointermove', (event) => {
       const pointer = event as PointerEvent;
-      if (dragging) T = pointerStartT - (pointer.clientX - pointerStartX) / Math.max(ws, 1);
+      if (dragging) {
+        if (Math.abs(pointer.clientX - pointerStartX) > 6) dragMoved = true;
+        T = pointerStartT - (pointer.clientX - pointerStartX) / Math.max(ws, 1);
+      }
       const target = pointer.target instanceof Element ? pointer.target.closest<HTMLElement>('.tape.open .cv') : null;
       const activeCard = target?.closest<HTMLElement>('.tape');
       if (target && activeCard) {
@@ -266,9 +302,36 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     viewport?.addEventListener('pointerup', finishPointer);
     viewport?.addEventListener('pointercancel', finishPointer);
 
+    viewport?.addEventListener('click', (event) => {
+      if (dragMoved) {
+        dragMoved = false;
+        return;
+      }
+      const target = event.target instanceof Element ? event.target.closest<HTMLElement>('.tape') : null;
+      const card = target ?? cards.find((candidate) => {
+        if (!candidate.classList.contains('open')) return false;
+        const bounds = candidate.querySelector<HTMLElement>('[data-cover]')?.getBoundingClientRect();
+        return Boolean(bounds && event.clientX >= bounds.left && event.clientX <= bounds.right && event.clientY >= bounds.top && event.clientY <= bounds.bottom);
+      });
+      if (card) dispatchOpenDetail(card);
+    });
+
     window.addEventListener('keydown', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('.detail-modal')) return;
+      if (event.key === 'Enter') {
+        if (target?.closest('.btn, a, input, textarea, select, [contenteditable="true"]')) return;
+        const focusedCard = target?.closest<HTMLElement>('.tape');
+        const activeCard = focusedCard?.classList.contains('open') ? focusedCard : cards.find((card) => card.classList.contains('open'));
+        if (activeCard) {
+          event.preventDefault();
+          dispatchOpenDetail(activeCard);
+        }
+        return;
+      }
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-      if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (document.body.classList.contains('detail-open')) return;
+      if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
       event.preventDefault();
       T += event.key === 'ArrowRight' ? 1 : -1;
     });

@@ -66,6 +66,7 @@ const { title = 'TAKUMI OMAKASE — 匠' } = Astro.props;
   .cursor--open { border-color: #1F3FB0; background: #1F3FB0; color: #fff; }
   .cursor--open .cursor-dot { display: none; }
   .cursor--open .cursor-label { display: flex; }
+  body.detail-open .cursor { opacity: 0 !important; }
   @media (pointer: fine) { body, body button { cursor: none; } }
   @media (pointer: coarse) { .cursor { display: none; } }
 </style>
