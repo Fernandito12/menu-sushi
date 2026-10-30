@@ -259,6 +259,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
             : 'modal'
         : target?.closest('.open .cv') ? 'open'
         : target?.closest('.spine') ? 'spine'
+        : target?.closest('.category:not(.active)') ? 'category'
         : target?.closest('.btn') ? 'button'
         : 'default';
     });
@@ -319,6 +320,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         cursor.style.setProperty('--cursor-scale', cursorScale.toFixed(3));
         cursor.classList.toggle('cursor--spine', cursorMode === 'spine');
         cursor.classList.toggle('cursor--button', cursorMode === 'button');
+        cursor.classList.toggle('cursor--category', cursorMode === 'category');
         cursor.classList.toggle('cursor--open', cursorMode === 'open');
         cursor.classList.toggle('cursor--modal', isOpen && cursorMode !== 'modal-close' && cursorMode !== 'modal-cta');
         cursor.classList.toggle('cursor--modal-close', isOpen && cursorMode === 'modal-close');
@@ -547,9 +549,11 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
   .categories::-webkit-scrollbar { display: none; }
   .category-nav { position: relative; z-index: 50; width: 100%; max-width: 100vw; display: flex !important; flex-wrap: nowrap !important; justify-content: flex-start !important; overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-x !important; pointer-events: auto !important; user-select: none; scroll-snap-type: x proximity; padding: 8px 24px !important; gap: 16px !important; }
   .category-nav > * { flex-shrink: 0 !important; }
-  .category-indicator { position: absolute; z-index: 0; top: 50%; left: 0; display: block; width: 0; height: 0; border-radius: 999px; background: var(--cobalt); pointer-events: none; transition: width .45s var(--ease), height .45s var(--ease), transform .55s var(--ease); }
-  .category { position: relative; z-index: 1; appearance: none; flex: 0 0 auto; flex-shrink: 0; white-space: nowrap; scroll-snap-align: center; border: 0; padding: 8px 10px; background: transparent; cursor: pointer; font-size: 9px; color: #898780; transition: color .25s ease; }
-  .category.active { color: #fff; }
+  .category-indicator { position: absolute; z-index: 0; top: 50%; left: 0; display: block; width: 0; height: 0; border: 1px solid rgba(31,63,176,.22); border-radius: 999px; background: rgba(31,63,176,.075); box-shadow: inset 0 1px 0 rgba(255,255,255,.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); pointer-events: none; transition: width .4s cubic-bezier(.16,1,.3,1), height .35s ease, transform .4s cubic-bezier(.16,1,.3,1); }
+  .category { position: relative; z-index: 1; appearance: none; flex: 0 0 auto; flex-shrink: 0; white-space: nowrap; scroll-snap-align: center; border: 0; border-radius: 999px; padding: 8px 10px; background: transparent; cursor: pointer; font-size: 9px; font-weight: 500; color: rgba(20,18,15,.5); opacity: 1; transition: color .25s ease, opacity .25s ease, font-weight .25s ease; }
+  .category:not(.active):hover { color: #14120F; opacity: .9; }
+  .category.active { color: #1F3FB0; font-weight: 600; }
+  .category.active::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 18px; height: 2px; border-radius: 2px; background: #1F3FB0; transform: translateX(-50%); }
   .edition { justify-self: end; padding-right: 122px; white-space: nowrap; font-size: 9px; color: #77746e; }
   .stage-wrap { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 650px; padding: 35px 0 40px; perspective: 2200px; }
   .eyebrow { z-index: 1; margin: 0 0 10px; color: var(--cobalt); font-size: 9px; }
