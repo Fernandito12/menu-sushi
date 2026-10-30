@@ -562,11 +562,12 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     .shelf-section__viewport { height: min(40svh, 330px); min-height: 240px; perspective: 1200px; perspective-origin: 50% 46%; touch-action: pan-y; }
     .stage { transform: translateZ(0) rotateX(-3deg); }
     .geometry-probe { height: min(48vw, 34svh) !important; }
-    .shelf { bottom: 24%; }
+    .shelf { bottom: 24%; background: transparent; box-shadow: none; }
+    .shelf::before { display: none; }
     .stage-hint { margin-top: 10px; }
-    :global(.caption-mask) { width: min(94vw, 520px); height: 112px; margin-top: 6px; }
-    :global(.caption-content) { row-gap: 9px; padding: 0 4%; }
-    :global(.caption-title) { font-size: clamp(25px, 7vw, 30px); }
+    :global(.caption-mask) { width: min(94vw, 520px); height: 128px; margin-top: 6px; }
+    :global(.caption-content) { row-gap: 12px; padding: 0 4%; }
+    :global(.caption-title) { padding-bottom: 12px; border-bottom: 1px solid var(--rule); font-size: clamp(25px, 7vw, 30px); }
     .footer { padding-top: 12px; padding-bottom: 16px; }
   }
   @media (prefers-reduced-motion: reduce) { :global(.caption-content) { transition-duration: .01ms; } }
