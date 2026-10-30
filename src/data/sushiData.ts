@@ -18,29 +18,39 @@ export interface SushiItem {
   coverCrop: { x: number; y: number; w: number; h: number };
 }
 
-const photo = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&fm=webp&q=85&w=1600`;
+const photo = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=85`;
 
 const galleries = {
-  dragonRoll: [photo('photo-1761314026068-f07ec1ce6e2b'), photo('photo-1749321834585-bda3df817655'), photo('photo-1637074930269-089fde202b57')],
-  otoroNigiri: [photo('photo-1691442574552-6059a11c0e25'), photo('photo-1772285268647-11deb0bdbe29'), photo('photo-1747471447806-c56d99c348cd')],
-  unagiFoieGras: [photo('photo-1763647756796-af9230245bf8'), photo('photo-1754211152988-c0622613211e'), photo('photo-1747471447806-c56d99c348cd')],
-  aburiSalmon: [photo('photo-1744360515510-db7bf0f6def8'), photo('photo-1747471447806-c56d99c348cd'), photo('photo-1637074930269-089fde202b57')],
-  spicyTunaRoll: [photo('photo-1713453018516-b08018818c0c'), photo('photo-1749321834585-bda3df817655'), photo('photo-1761314026068-f07ec1ce6e2b')],
-  yellowtailSashimi: [photo('photo-1772285283419-b34f42b4a4df'), photo('photo-1754211152988-c0622613211e'), photo('photo-1772285268647-11deb0bdbe29')],
-  tempuraKingPrawn: [photo('photo-1666599207746-0868c6a556d2'), photo('photo-1772285283419-b34f42b4a4df'), photo('photo-1754211152988-c0622613211e')],
-  seaUrchinGunkan: [photo('photo-1747471447806-c56d99c348cd'), photo('photo-1754211152988-c0622613211e'), photo('photo-1637074930269-089fde202b57')],
-  a5WagyuNigiri: [photo('photo-1691442574552-6059a11c0e25'), photo('photo-1772285268647-11deb0bdbe29'), photo('photo-1747471447806-c56d99c348cd')],
-  softShellCrab: [photo('photo-1713453018516-b08018818c0c'), photo('photo-1749321834585-bda3df817655'), photo('photo-1637074930269-089fde202b57')],
-  scallopSashimi: [photo('photo-1772285283419-b34f42b4a4df'), photo('photo-1754211152988-c0622613211e'), photo('photo-1772285268647-11deb0bdbe29')],
+  // Rollos: vista completa, textura del corte y presentación con palillos.
+  dragonRoll: [photo('photo-1768326119226-b6dae07aaa0c'), photo('photo-1761314026068-f07ec1ce6e2b'), photo('photo-1680675228874-9b9963812b7c')],
+  spicyTunaRoll: [photo('photo-1761314026068-f07ec1ce6e2b'), photo('photo-1768326119226-b6dae07aaa0c'), photo('photo-1637074930269-089fde202b57')],
+  softShellCrab: [photo('photo-1768326119226-b6dae07aaa0c'), photo('photo-1680675228874-9b9963812b7c'), photo('photo-1763647756796-af9230245bf8')],
+
+  // Nigiri y bocados: piezas individuales, detalle y mesa omakase.
+  otoroNigiri: [photo('photo-1637074930269-089fde202b57'), photo('photo-1680675228874-9b9963812b7c'), photo('photo-1763647756796-af9230245bf8')],
+  aburiSalmon: [photo('photo-1744360515510-db7bf0f6def8'), photo('photo-1710945301326-d60727e4833a'), photo('photo-1680675228874-9b9963812b7c')],
+  seaUrchinGunkan: [photo('photo-1763647756796-af9230245bf8'), photo('photo-1637074930269-089fde202b57'), photo('photo-1744360515510-db7bf0f6def8')],
+  a5WagyuNigiri: [photo('photo-1637074930269-089fde202b57'), photo('photo-1763647756796-af9230245bf8'), photo('photo-1680675228874-9b9963812b7c')],
+  unagiFoieGras: [photo('photo-1763647756796-af9230245bf8'), photo('photo-1637074930269-089fde202b57'), photo('photo-1680675228874-9b9963812b7c')],
+
+  // Sashimi: cortes limpios, textura del pescado y emplatado.
+  yellowtailSashimi: [photo('photo-1775889184887-9bc308c98aee'), photo('photo-1744360515510-db7bf0f6def8'), photo('photo-1763647756796-af9230245bf8')],
+  scallopSashimi: [photo('photo-1775889184887-9bc308c98aee'), photo('photo-1680675228874-9b9963812b7c'), photo('photo-1763647756796-af9230245bf8')],
+  tempuraKingPrawn: [photo('photo-1763647756796-af9230245bf8'), photo('photo-1680675228874-9b9963812b7c'), photo('photo-1768326119226-b6dae07aaa0c')],
+
+  // Entradas japonesas.
+  edamame: [photo('photo-1547592180-85f173990554'), photo('photo-1512621776951-a57141f2eefd'), photo('photo-1763647756796-af9230245bf8')],
+  porkGyoza: [photo('photo-1563245372-f21724e3856d'), photo('photo-1749321834585-bda3df817655'), photo('photo-1680675228874-9b9963812b7c')],
+  spicyEdamame: [photo('photo-1512621776951-a57141f2eefd'), photo('photo-1547592180-85f173990554'), photo('photo-1680675228874-9b9963812b7c')],
+  agedashiTofu: [photo('photo-1547592180-85f173990554'), photo('photo-1563245372-f21724e3856d'), photo('photo-1680675228874-9b9963812b7c')],
+
+  // Bebidas y postres.
   ceremonialMatcha: [photo('photo-1755685068178-4b57210ddcd4'), photo('photo-1753009712810-3f72c3f72548'), photo('photo-1515823064-d6e0c04616a7')],
-  edamame: [photo('photo-1547592180-85f173990554'), photo('photo-1512621776951-a57141f2eefd'), photo('photo-1547592180-85f173990554')],
-  porkGyoza: [photo('photo-1563245372-f21724e3856d'), photo('photo-1749321834585-bda3df817655'), photo('photo-1563245372-f21724e3856d')],
-  spicyEdamame: [photo('photo-1512621776951-a57141f2eefd'), photo('photo-1547592180-85f173990554'), photo('photo-1512621776951-a57141f2eefd')],
-  sake: [photo('photo-1513558161293-cdaf765edfd47'), photo('photo-1515823064-d6e0c04616a7'), photo('photo-1513558161293-cdaf765edfd47')],
-  sapporo: [photo('photo-1535958636474-b021ee887b13'), photo('photo-1513558161293-cdaf765edfd47'), photo('photo-1535958636474-b021ee887b13')],
+  sake: [photo('photo-1513558161293-cdaf765edfd47'), photo('photo-1515823064-d6e0c04616a7'), photo('photo-1680675228874-9b9963812b7c')],
+  sapporo: [photo('photo-1535958636474-b021ee887b13'), photo('photo-1513558161293-cdaf765edfd47'), photo('photo-1680675228874-9b9963812b7c')],
   icedMatcha: [photo('photo-1515823064-d6e0c04616a7'), photo('photo-1755685068178-4b57210ddcd4'), photo('photo-1753009712810-3f72c3f72548')],
-  matchaMochi: [photo('photo-1582176604856-e824b4736522'), photo('photo-1755685068178-4b57210ddcd4'), photo('photo-1582176604856-e824b4736522')],
-  blackSesameIceCream: [photo('photo-1563805042-7684c019e1cb'), photo('photo-1582176604856-e824b4736522'), photo('photo-1563805042-7684c019e1cb')],
+  matchaMochi: [photo('photo-1582176604856-e824b4736522'), photo('photo-1755685068178-4b57210ddcd4'), photo('photo-1753009712810-3f72c3f72548')],
+  blackSesameIceCream: [photo('photo-1563805042-7684c019e1cb'), photo('photo-1582176604856-e824b4736522'), photo('photo-1753009712810-3f72c3f72548')],
 };
 
 const sushiCatalog: SushiItem[] = [
@@ -218,7 +228,7 @@ const sushiCatalog: SushiItem[] = [
   },
   {
     id: 'agedashi-tofu', title: 'Agedashi Tofu', titleEs: 'Tofu agedashi', romaji: 'Agedashi Dōfu', kanji: '揚げ出し豆腐', category: 'entradas', price: 125,
-    images: [photo('photo-1547592180-85f173990554'), photo('photo-1563245372-f21724e3856d'), photo('photo-1547592180-85f173990554')],
+    images: galleries.agedashiTofu,
     ingredients: ['Tofu sedoso', 'fécula de papa', 'dashi', 'salsa de soya', 'daikon', 'cebollín'],
     allergens: ['Soya', 'Gluten'],
     sakePairing: 'Junmai ginjo frío · notas limpias que acompañan el caldo dashi y la textura del tofu.',
