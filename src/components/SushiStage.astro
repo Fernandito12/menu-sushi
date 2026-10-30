@@ -301,7 +301,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       const cursorEase = prefersReducedMotion ? 1 : 1 - Math.exp(-16 * dt);
       cursorX += (pointerX - cursorX) * cursorEase;
       cursorY += (pointerY - cursorY) * cursorEase;
-      const targetCursorScale = cursorMode === 'open' ? 1.75 : cursorMode === 'spine' ? 0.72 : cursorMode === 'button' ? 0.55 : cursorMode === 'modal-close' ? 1.14 : cursorMode === 'modal-cta' ? 1.18 : 1;
+      const targetCursorScale = cursorMode === 'open' ? 1.75 : cursorMode === 'spine' ? 0.72 : cursorMode === 'button' ? 0.55 : cursorMode === 'modal-close' ? 1.14 : 1;
       if (cursorReturnStart) {
         const progress = Math.min(1, (now - cursorReturnStart) / 300);
         const eased = 1 - Math.pow(1 - progress, 3);
@@ -322,7 +322,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         cursor.classList.toggle('cursor--open', cursorMode === 'open');
         cursor.classList.toggle('cursor--modal', isOpen && cursorMode !== 'modal-close' && cursorMode !== 'modal-cta');
         cursor.classList.toggle('cursor--modal-close', isOpen && cursorMode === 'modal-close');
-        cursor.classList.toggle('cursor--modal-cta', isOpen && cursorMode === 'modal-cta');
+        cursor.classList.toggle('is-hovering-cta', isOpen && cursorMode === 'modal-cta');
         cursor.classList.toggle('cursor--gallery-controls', isOpen && cursorMode === 'gallery-controls');
       }
 
