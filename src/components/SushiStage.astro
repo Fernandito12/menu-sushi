@@ -2,7 +2,16 @@
 import { sushiData } from '../data/sushiData';
 import SushiDetailModal from './SushiDetailModal.astro';
 const tapes = Array.from({ length: 3 }, (_, turn) => sushiData.map((item, index) => ({ item, index: turn * sushiData.length + index })) ).flat();
-const categories = ['ALL', 'NIGIRI', 'MAKI', 'SASHIMI', 'SPECIALS'];
+const categories = [
+  { label: 'TODOS', value: 'all' },
+  { label: 'NIGIRI', value: 'nigiri' },
+  { label: 'MAKI', value: 'maki' },
+  { label: 'SASHIMI', value: 'sashimi' },
+  { label: 'ESPECIALES', value: 'specials' },
+];
+const categoryNames: Record<string, string> = {
+  nigiri: 'Nigiri', maki: 'Maki', sashimi: 'Sashimi', specials: 'Especiales',
+};
 const cropStyle = (crop: { x: number; y: number; w: number; h: number }) =>
   `--cx:${crop.x};--cy:${crop.y};--cw:${crop.w};--ch:${crop.h}`;
 const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUrl: string) =>
@@ -15,7 +24,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     </a>
     <nav class="categories" aria-label="Categorías del menú">
       {categories.map((category, i) => (
-        <button class:list={['category', 'btn', { active: i === 0 }]} type="button" data-category={category.toLowerCase()} aria-pressed={i === 0 ? 'true' : 'false'}>{category}</button>
+        <button class:list={['category', 'btn', { active: i === 0 }]} type="button" data-category={category.value} aria-pressed={i === 0 ? 'true' : 'false'}>{category.label}</button>
       ))}
     </nav>
     <span class="edition">MENÚ · 01</span>
@@ -33,7 +42,7 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
             </div>
             <div class="cv" data-cover style={faceStyle(item.coverCrop, item.imageUrl)}>
               <div class="cover-copy">
-                <span class="cover-category">{item.category}</span>
+                <span class="cover-category">{categoryNames[item.category]}</span>
                 <h2>{item.title}</h2>
                 <span class="cover-romaji">{item.romaji}</span>
                 <span class="cover-price">${item.price} <small>MXN</small></span>
