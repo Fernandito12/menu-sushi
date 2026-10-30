@@ -1,7 +1,7 @@
 <div class="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title" aria-hidden="true" tabindex="-1">
   <div class="detail-inner">
     <section class="detail-copy" aria-label="Detalle del platillo">
-      <button class="detail-close" type="button" data-close>
+      <button class="detail-close close-btn" type="button" data-close>
         <span>CERRAR / <i lang="ja">閉じる</i></span><b aria-hidden="true">×</b>
       </button>
 
@@ -13,7 +13,7 @@
       <div class="detail-line" data-detail-line><p class="detail-ingredients"><span>INGREDIENTES</span><b data-field="ingredients">Anguila · aguacate · arroz</b></p></div>
       <div class="detail-line" data-detail-line><div class="sake-copy"><span>MARIDAJE DE SAKE</span><p data-field="sake">Junmai ginjo frío · notas de pera y arroz.</p></div></div>
       <div class="detail-line detail-action-line" data-detail-line>
-        <button class="detail-order" type="button" data-order>
+        <button class="detail-order cta-btn" type="button" data-order>
           <span data-order-label>AÑADIR AL PEDIDO <i lang="ja">注文する</i></span><b aria-hidden="true">↗</b>
         </button>
       </div>
@@ -79,6 +79,7 @@
   };
 
   if (modal && inner && closeButton && orderButton && photo) {
+    let isOpen = false;
     let activeDish: DishDetail | null = null;
     let origin: DetailOrigin | null = null;
     let originCard: HTMLElement | null = null;
@@ -181,6 +182,8 @@
       document.body.style.overflow = 'hidden';
       document.body.classList.add('detail-open');
       modal.classList.add('is-open');
+      isOpen = true;
+      window.dispatchEvent(new CustomEvent('takumi:detail-state', { detail: { isOpen } }));
       modal.setAttribute('aria-hidden', 'false');
       modal.style.visibility = 'visible';
       modal.style.pointerEvents = 'auto';
@@ -219,6 +222,8 @@
     const closeDetail = async () => {
       if (!modal.classList.contains('is-open') || !origin) return;
       const sequence = ++transition;
+      isOpen = false;
+      window.dispatchEvent(new CustomEvent('takumi:detail-state', { detail: { isOpen } }));
       const currentRect = modal.getBoundingClientRect();
       const currentTransform = getComputedStyle(modal).transform;
       cancelAnimationFrame(inkFrame);

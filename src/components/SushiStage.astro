@@ -126,6 +126,9 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
     let pointerY = cursorY;
     let cursorMode = 'default';
     let cursorScale = 1;
+    let isOpen = false;
+    let cursorReturnStart = 0;
+    let cursorReturnFrom = 1;
     let lastCaptionIndex = 0;
     let pointerStartX = 0;
     let pointerStartT = 0;
@@ -205,13 +208,32 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       pointerY = event.clientY;
       if (cursor) cursor.style.opacity = '1';
       const target = event.target instanceof Element ? event.target : null;
-      cursorMode = target?.closest('.open .cv') ? 'open'
+      cursorMode = isOpen
+        ? target?.closest('.detail-modal .close-btn') ? 'modal-close'
+          : target?.closest('.detail-modal .cta-btn') ? 'modal-cta'
+            : target?.closest('.detail-modal') ? 'modal' : 'modal'
+        : target?.closest('.open .cv') ? 'open'
         : target?.closest('.spine') ? 'spine'
         : target?.closest('.btn') ? 'button'
         : 'default';
     });
     window.addEventListener('pointerout', (event) => {
       if (event.relatedTarget === null && cursor) cursor.style.opacity = '0';
+    });
+
+    window.addEventListener('takumi:detail-state', (event) => {
+      if (!cursor) return;
+      const detail = (event as CustomEvent<{ isOpen: boolean }>).detail;
+      isOpen = Boolean(detail?.isOpen);
+      cursorReturnStart = 0;
+      if (isOpen) {
+        cursor.classList.remove('cursor--returning');
+      } else {
+        cursorReturnFrom = cursorScale;
+        cursorReturnStart = performance.now();
+        cursorMode = 'default';
+        cursor.classList.add('cursor--returning');
+      }
     });
 
     const animate = (now: number) => {
@@ -222,8 +244,18 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
       const cursorEase = prefersReducedMotion ? 1 : 1 - Math.exp(-16 * dt);
       cursorX += (pointerX - cursorX) * cursorEase;
       cursorY += (pointerY - cursorY) * cursorEase;
-      const targetCursorScale = cursorMode === 'open' ? 1.75 : cursorMode === 'spine' ? 0.72 : cursorMode === 'button' ? 0.55 : 1;
-      cursorScale += (targetCursorScale - cursorScale) * cursorEase;
+      const targetCursorScale = cursorMode === 'open' ? 1.75 : cursorMode === 'spine' ? 0.72 : cursorMode === 'button' ? 0.55 : cursorMode === 'modal-close' ? 1.14 : cursorMode === 'modal-cta' ? 1.18 : 1;
+      if (cursorReturnStart) {
+        const progress = Math.min(1, (now - cursorReturnStart) / 300);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        cursorScale = cursorReturnFrom + (1 - cursorReturnFrom) * eased;
+        if (progress === 1) {
+          cursorReturnStart = 0;
+          cursor?.classList.remove('cursor--returning');
+        }
+      } else {
+        cursorScale += (targetCursorScale - cursorScale) * cursorEase;
+      }
       if (cursor) {
         cursor.style.setProperty('--cursor-x', `${cursorX}px`);
         cursor.style.setProperty('--cursor-y', `${cursorY}px`);
@@ -231,6 +263,9 @@ const faceStyle = (crop: { x: number; y: number; w: number; h: number }, imageUr
         cursor.classList.toggle('cursor--spine', cursorMode === 'spine');
         cursor.classList.toggle('cursor--button', cursorMode === 'button');
         cursor.classList.toggle('cursor--open', cursorMode === 'open');
+        cursor.classList.toggle('cursor--modal', isOpen && cursorMode !== 'modal-close' && cursorMode !== 'modal-cta');
+        cursor.classList.toggle('cursor--modal-close', isOpen && cursorMode === 'modal-close');
+        cursor.classList.toggle('cursor--modal-cta', isOpen && cursorMode === 'modal-cta');
       }
 
       const activeCaptionIndex = Math.floor(mod(s + 0.5, count));

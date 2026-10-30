@@ -29,7 +29,10 @@ const { title = 'TAKUMI OMAKASE — 匠' } = Astro.props;
     </div>
     <div class="cursor" aria-hidden="true">
       <span class="cursor-dot"></span>
-      <span class="cursor-label">VER / <i lang="ja">注文</i></span>
+      <span class="cursor-label">
+        <span data-cursor-label="cover">VER / <i lang="ja">注文</i></span>
+        <span data-cursor-label="close">CLOSE / <i lang="ja">閉じる</i></span>
+      </span>
     </div>
     <div class="paper-grain" aria-hidden="true">
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
@@ -65,18 +68,29 @@ const { title = 'TAKUMI OMAKASE — 匠' } = Astro.props;
   .watermark-category.is-active { opacity: 1; }
   .paper-grain { position: fixed; inset: 0; z-index: 20; pointer-events: none; opacity: .55; mix-blend-mode: multiply; }
   .paper-grain svg { display: block; width: 100%; height: 100%; }
-  .cursor { --cursor-x: 50vw; --cursor-y: 50vh; --cursor-scale: 1; position: fixed; z-index: 60; top: 0; left: 0; width: 58px; height: 58px; display: grid; place-items: center; border: 1px solid rgba(36, 78, 138, .52); border-radius: 50%; color: var(--ink); pointer-events: none; opacity: 0; transform: translate3d(var(--cursor-x), var(--cursor-y), 0) translate(-50%, -50%) scale(var(--cursor-scale)); transition: opacity .18s ease, color .18s ease, background-color .18s ease, border-color .18s ease; }
+  .cursor { --cursor-x: 50vw; --cursor-y: 50vh; --cursor-scale: 1; position: fixed; z-index: 100; top: 0; left: 0; width: 58px; height: 58px; display: grid; place-items: center; border: 1px solid rgba(36, 78, 138, .52); border-radius: 50%; color: var(--ink); pointer-events: none; opacity: 0; transform: translate3d(var(--cursor-x), var(--cursor-y), 0) translate(-50%, -50%) scale(var(--cursor-scale)); transition: opacity .18s ease, color .18s ease, background-color .18s ease, border-color .18s ease, width .3s ease, height .3s ease; }
   .cursor-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
-  .cursor-label { display: none; flex-direction: column; align-items: center; gap: 2px; font-size: 8px; font-weight: 600; letter-spacing: .09em; }
+  .cursor-label { display: none; flex-direction: column; align-items: center; gap: 2px; font-size: 8px; font-weight: 600; letter-spacing: .09em; white-space: nowrap; }
+  .cursor-label [data-cursor-label="close"] { display: none; }
   .cursor-label i { font: 10px 'Noto Sans JP', sans-serif; letter-spacing: 0; }
   .cursor--spine { border-color: rgba(36, 78, 138, .28); }
   .cursor--button { border-color: rgba(36, 78, 138, .65); background: rgba(247, 244, 239, .9); }
   .cursor--button .cursor-dot { display: none; }
   .cursor--open { border-color: #1F3FB0; background: #1F3FB0; color: #fff; }
   .cursor--open .cursor-dot { display: none; }
-  .cursor--open .cursor-label { display: flex; }
-  body.detail-open .cursor { opacity: 0 !important; }
+  .cursor--open .cursor-label, .cursor--modal-close .cursor-label { display: flex; }
+  .cursor--modal { width: 24px; height: 24px; border-color: rgba(25, 27, 27, .28); color: var(--ink); opacity: .52; }
+  .cursor--modal .cursor-label { display: none; }
+  .cursor--modal-close { width: 76px; height: 76px; border-color: var(--cobalt); background: var(--paper); color: var(--cobalt); opacity: .96; }
+  .cursor--modal-close .cursor-dot, .cursor--modal-cta .cursor-dot { display: none; }
+  .cursor--modal-close [data-cursor-label="cover"] { display: none; }
+  .cursor--modal-close [data-cursor-label="close"] { display: block; }
+  .cursor--modal-close .cursor-label { display: block; font-size: 8px; }
+  .cursor--modal-cta { width: 82px; height: 82px; border-color: #1F3FB0; background: #1F3FB0; color: #fff; opacity: .94; animation: cursor-pulse 1.7s ease-in-out infinite; }
+  .cursor--modal-cta .cursor-label { display: none; }
+  .cursor--returning { transition: opacity .3s ease, color .3s ease, background-color .3s ease, border-color .3s ease, width .3s ease, height .3s ease; }
+  @keyframes cursor-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(31, 63, 176, .18); } 50% { box-shadow: 0 0 0 10px rgba(31, 63, 176, 0); } }
   @media (pointer: fine) { body, body button { cursor: none; } }
   @media (pointer: coarse) { .cursor { display: none; } }
-  @media (prefers-reduced-motion: reduce) { .watermark-category { transition-duration: .01ms; } }
+  @media (prefers-reduced-motion: reduce) { .watermark-category, .cursor--returning { transition-duration: .01ms; } .cursor--modal-cta { animation: none; } }
 </style>
